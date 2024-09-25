@@ -89,7 +89,9 @@
     ],
     "native": {
         "project": "",
-        "accessToken": ""
+        "accessToken": "",
+        "solarprognoseItem": "inverter",
+        "id": null
     },
     "objects": [],
     "instanceObjects": []

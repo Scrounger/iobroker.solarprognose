@@ -6,5 +6,11 @@
 	"login data": "Login data",
 	"jsonTable": "JSON Table",
 	"statusResponse": "api status response",
-	"lastUpdate": "last update of the data"
+	"lastUpdate": "last update of the data",
+	"solarprognoseItem": "item",
+	"solarprognoseId": "id",
+	"location": "location",
+	"plant": "plant",
+	"inverter": "inverter",
+	"module_field": "module field"
 }

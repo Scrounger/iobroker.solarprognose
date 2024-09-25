@@ -6,6 +6,8 @@ declare global {
 		interface AdapterConfig {
 			project: string;
 			accessToken: string;
+			solarprognoseItem: string;
+			solarprognoseId: number;
 		}
 	}
 }

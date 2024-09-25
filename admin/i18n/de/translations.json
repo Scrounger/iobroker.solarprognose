@@ -6,5 +6,11 @@
     "login data": "Anmeldedaten",
     "jsonTable": "JSON-Tabelle",
     "statusResponse": "API-Statusantwort",
-    "lastUpdate": "letzte Aktualisierung der Daten"
+    "lastUpdate": "letzte Aktualisierung der Daten",
+    "solarprognoseItem": "Item",
+    "solarprognoseId": "Id",
+    "location": "Standort",
+    "plant": "Anlage",
+    "inverter": "Wechselrichter",
+    "module_field": "Modulfeld"
 }

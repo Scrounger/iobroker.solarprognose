@@ -91,7 +91,7 @@ class Solarprognose extends utils.Adapter {
   // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
   // /**
   //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-  //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
+  //  * Using this method requires 'common.messagebox' property to be set to true in io-package.json
   //  */
   // private onMessage(obj: ioBroker.Message): void {
   // 	if (typeof obj === 'object' && obj.message) {
@@ -107,14 +107,14 @@ class Solarprognose extends utils.Adapter {
     const logPrefix = "[updateData]:";
     try {
       if (this.config.project && this.config.accessToken) {
-        const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&type=hourly&_format=json`;
+        const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&item=${this.config.solarprognoseItem}&id=${this.config.solarprognoseId}&type=hourly&_format=json`;
         const data = await this.downloadData(url);
         this.log.silly(JSON.stringify(data));
         if (data) {
           if (data.status === 0) {
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], data.status, "statusResponse", true);
             if (data.data) {
-              let jsonResult = [];
+              const jsonResult = [];
               for (const [timestamp, arr] of Object.entries(data.data)) {
                 jsonResult.push({
                   human: (0, import_moment.default)(parseInt(timestamp) * 1e3).format(`ddd ${this.dateFormat} HH:mm`),
@@ -161,8 +161,8 @@ class Solarprognose extends utils.Adapter {
         }
       } else {
         this.log.warn(`${logPrefix} Test mode is active!`);
-        const objects = require("../test/testData.json");
-        return objects;
+        const { default: data } = await Promise.resolve().then(() => __toESM(require("../test/testData.json")));
+        return data;
       }
     } catch (error) {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

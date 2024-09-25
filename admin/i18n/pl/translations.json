@@ -6,5 +6,11 @@
     "login data": "Dane logowania",
     "jsonTable": "Tabela JSON",
     "statusResponse": "odpowiedź na stan interfejsu API",
-    "lastUpdate": "ostatnia aktualizacja danych"
+    "lastUpdate": "ostatnia aktualizacja danych",
+    "solarprognoseItem": "przedmiot",
+    "solarprognoseId": "id",
+    "location": "lokalizacja",
+    "plant": "zakład",
+    "inverter": "falownik",
+    "module_field": "pole modułu"
 }

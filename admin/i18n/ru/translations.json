@@ -6,5 +6,11 @@
     "login data": "Данные для входа",
     "jsonTable": "Таблица JSON",
     "statusResponse": "ответ на статус API",
-    "lastUpdate": "последнее обновление данных"
+    "lastUpdate": "последнее обновление данных",
+    "solarprognoseItem": "элемент",
+    "solarprognoseId": "идентификатор",
+    "location": "расположение",
+    "plant": "растение",
+    "inverter": "инвертор",
+    "module_field": "поле модуля"
 }

@@ -6,5 +6,11 @@
     "login data": "Логін дані",
     "jsonTable": "Таблиця JSON",
     "statusResponse": "відповідь на статус API",
-    "lastUpdate": "останнє оновлення даних"
+    "lastUpdate": "останнє оновлення даних",
+    "solarprognoseItem": "пункт",
+    "solarprognoseId": "id",
+    "location": "розташування",
+    "plant": "завод",
+    "inverter": "інвертор",
+    "module_field": "поле модуля"
 }

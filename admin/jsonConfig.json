@@ -30,7 +30,37 @@
 			"type": "password",
 			"label": "accessToken",
 			"sm": 12,
-			"md": 3
+			"md": 2
+		},
+		"solarprognoseItem": {
+			"type": "select",
+			"label": "solarprognoseItem",
+			"options": [
+				{
+					"label": "location",
+					"value": "location"
+				},
+				{
+					"label": "plant",
+					"value": "plant"
+				},
+				{
+					"label": "inverter",
+					"value": "inverter"
+				},
+				{
+					"label": "module_field",
+					"value": "module_field"
+				}
+			],
+			"sm": 12,
+			"md": 2
+		},
+		"solarprognoseId": {
+			"type": "number",
+			"label": "solarprognoseId",
+			"sm": 12,
+			"md": 2
 		}
 	}
 }

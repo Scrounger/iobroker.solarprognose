@@ -6,13 +6,13 @@
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
 import moment from 'moment';
-import * as schedule from "node-schedule";
+import * as schedule from 'node-schedule';
 
 import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = true;
+	testMode = false;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -91,7 +91,7 @@ class Solarprognose extends utils.Adapter {
 	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
 	// /**
 	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-	//  * Using this method requires "common.messagebox" property to be set to true in io-package.json
+	//  * Using this method requires 'common.messagebox' property to be set to true in io-package.json
 	//  */
 	// private onMessage(obj: ioBroker.Message): void {
 	// 	if (typeof obj === 'object' && obj.message) {
@@ -110,7 +110,7 @@ class Solarprognose extends utils.Adapter {
 
 		try {
 			if (this.config.project && this.config.accessToken) {
-				const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&type=hourly&_format=json`;
+				const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&item=${this.config.solarprognoseItem}&id=${this.config.solarprognoseId}&type=hourly&_format=json`;
 				const data = await this.downloadData(url);
 
 				this.log.silly(JSON.stringify(data));
@@ -122,7 +122,7 @@ class Solarprognose extends utils.Adapter {
 						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['statusResponse'], data.status, 'statusResponse', true);
 
 						if (data.data) {
-							let jsonResult: Array<myTypes.myJsonStructure> = [];
+							const jsonResult: Array<myTypes.myJsonStructure> = [];
 							for (const [timestamp, arr] of Object.entries(data.data)) {
 								jsonResult.push({
 									human: moment(parseInt(timestamp) * 1000).format(`ddd ${this.dateFormat} HH:mm`),
@@ -130,8 +130,6 @@ class Solarprognose extends utils.Adapter {
 									val: arr[0],
 									total: arr[1]
 								});
-
-
 							}
 
 							await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
@@ -181,8 +179,8 @@ class Solarprognose extends utils.Adapter {
 			} else {
 				this.log.warn(`${logPrefix} Test mode is active!`);
 
-				const objects = require('../test/testData.json');
-				return objects;
+				const { default: data } = await import('../test/testData.json', { assert: { type: "json" } });
+				return data;
 			}
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

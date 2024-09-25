@@ -6,5 +6,11 @@
     "login data": "登录数据",
     "jsonTable": "JSON 表",
     "statusResponse": "API状态响应",
-    "lastUpdate": "数据的最后更新"
+    "lastUpdate": "数据的最后更新",
+    "solarprognoseItem": "物品",
+    "solarprognoseId": "ID",
+    "location": "地点",
+    "plant": "植物",
+    "inverter": "逆变器",
+    "module_field": "模块字段"
 }

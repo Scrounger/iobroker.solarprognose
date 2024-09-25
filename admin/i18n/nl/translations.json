@@ -6,5 +6,11 @@
     "login data": "Login gegevens",
     "jsonTable": "JSON-tabel",
     "statusResponse": "API-statusreactie",
-    "lastUpdate": "laatste update van de gegevens"
+    "lastUpdate": "laatste update van de gegevens",
+    "solarprognoseItem": "item",
+    "solarprognoseId": "Identiteitskaart",
+    "location": "locatie",
+    "plant": "plant",
+    "inverter": "omvormer",
+    "module_field": "moduleveld"
 }
