@@ -1,5 +1,5 @@
 {
-	"solarprognose adapter settings": "Adapterinstellingen voor solarprognose",
-	"option1": "optie1",
-	"option2": "optie2"
+    "solarprognose adapter settings": "Adapterinstellingen voor zonneprognose",
+    "projectUsername": "Project-/gebruikersnaam",
+    "accessToken": "Toegangstoken"
 }

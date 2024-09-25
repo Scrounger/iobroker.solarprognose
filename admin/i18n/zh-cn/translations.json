@@ -1,5 +1,5 @@
 {
-	"solarprognose adapter settings": "solarprognose的适配器设置",
-	"option1": "选项1",
-	"option2": "选项2"
+    "solarprognose adapter settings": "Solarprognose 的适配器设置",
+    "projectUsername": "项目/用户名",
+    "accessToken": "访问令牌"
 }

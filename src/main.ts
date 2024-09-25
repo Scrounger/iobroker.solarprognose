@@ -7,9 +7,11 @@
 import * as utils from '@iobroker/adapter-core';
 
 // Load your modules here, e.g.:
-// import * as fs from "fs";
+import * as myTypes from './lib/myTypes';
 
 class Solarprognose extends utils.Adapter {
+	testMode = true;
+	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -27,57 +29,16 @@ class Solarprognose extends utils.Adapter {
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	private async onReady(): Promise<void> {
-		// Initialize your adapter here
+		const logPrefix = '[onReady]:';
 
-		// The adapters config (in the instance object everything under the attribute "native") is accessible via
-		// this.config:
-		this.log.info('config option1: ' + this.config.option1);
-		this.log.info('config option2: ' + this.config.option2);
+		try {
+			// Initialize your adapter here
 
-		/*
-		For every state in the system there has to be also an object of type state
-		Here a simple template for a boolean variable named "testVariable"
-		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-		*/
-		await this.setObjectNotExistsAsync('testVariable', {
-			type: 'state',
-			common: {
-				name: 'testVariable',
-				type: 'boolean',
-				role: 'indicator',
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
+			await this.updateData();
 
-		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-		this.subscribeStates('testVariable');
-		// You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-		// this.subscribeStates('lights.*');
-		// Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-		// this.subscribeStates('*');
-
-		/*
-			setState examples
-			you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-		*/
-		// the variable testVariable is set to true as command (ack=false)
-		await this.setStateAsync('testVariable', true);
-
-		// same thing, but the value is flagged "ack"
-		// ack should be always set to true if the value is received from or acknowledged from the target system
-		await this.setStateAsync('testVariable', { val: true, ack: true });
-
-		// same thing, but the state is deleted after 30s (getState will return null afterwards)
-		await this.setStateAsync('testVariable', { val: true, ack: true, expire: 30 });
-
-		// examples for the checkPassword/checkGroup functions
-		let result = await this.checkPasswordAsync('admin', 'iobroker');
-		this.log.info('check user admin pw iobroker: ' + result);
-
-		result = await this.checkGroupAsync('admin', 'admin');
-		this.log.info('check group user admin group admin: ' + result);
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
 	}
 
 	/**
@@ -141,6 +102,125 @@ class Solarprognose extends utils.Adapter {
 	// 		}
 	// 	}
 	// }
+
+	private async updateData(): Promise<void> {
+		const logPrefix = '[updateData]:';
+
+		try {
+			if (this.config.project && this.config.accessToken) {
+				const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&type=hourly&_format=json`;
+				const data = await this.downloadData(url);
+
+				this.log.silly(JSON.stringify(data));
+
+				if (data) {
+					if (data.status === 0) {
+
+						if (data.data) {
+							let jsonResult: Array<myTypes.myJsonStructure> = [];
+							for (const [timestamp, arr] of Object.entries(data.data)) {
+								jsonResult.push({
+									timestamp: parseInt(timestamp),
+									val: arr[0],
+									total: arr[1]
+								})
+							}
+
+							await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['json'], JSON.stringify(jsonResult), 'json');
+						} else {
+							this.log.error(`${logPrefix} received data has no forecast data!`);
+						}
+					} else {
+						this.log.error(`${logPrefix} data received with error code: ${data.status}`);
+					}
+				} else {
+					this.log.error(`${logPrefix} no data received!`);
+				}
+
+			} else {
+				this.log.error(`${logPrefix} project and / or access token missing. Please check your adapter configuration!`);
+			}
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
+	}
+
+	private async downloadData(url: string): Promise<myTypes.dataStructure | undefined> {
+		const logPrefix = '[downloadData]:';
+
+		try {
+			if (!this.testMode) {
+				const response: any = await fetch(url);
+
+				if (response.status === 200) {
+					this.log.debug(`${logPrefix} data successfully received`);
+					return await response.json();
+				} else {
+					this.log.error(`${logPrefix} status code: ${response.status}`);
+				}
+			} else {
+				this.log.warn(`${logPrefix} Test mode is active!`);
+
+				const objects = require('../test/testData.json');
+				return objects;
+			}
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
+
+		return undefined;
+	}
+
+	private async createOrUpdateState(idChannel: string, stateDef: myTypes.tStateDefinition, val: string | number, key: string): Promise<boolean> {
+		const logPrefix = '[createOrUpdateState]:';
+
+		try {
+			const id = `${idChannel}.${stateDef.id}`
+
+			// stateDef.common.name = this.getTranslation(key);
+
+			if (stateDef.common.unit && Object.prototype.hasOwnProperty.call(this.config, stateDef.common.unit)) {
+				//@ts-ignore
+				stateDef.common.unit = this.getTranslation(this.config[stateDef.common.unit]) || stateDef.common.unit
+			}
+
+			if (!await this.objectExists(id)) {
+				this.log.debug(`${logPrefix} creating state '${id}'`);
+
+				const obj = {
+					type: 'state',
+					common: stateDef.common,
+					native: {}
+				};
+
+				//@ts-ignore
+				await this.setObjectAsync(id, obj);
+			} else {
+				// update State if needed
+				const obj = await this.getObjectAsync(id);
+
+				if (obj && obj.common) {
+					if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
+						await this.extendObject(id, { common: stateDef.common });
+						this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
+					}
+				}
+			}
+
+			let changedObj: any = undefined;
+
+			changedObj = await this.setStateChangedAsync(id, val, true);
+
+			if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, 'notChanged') && !changedObj.notChanged) {
+				this.log.silly(`${logPrefix} value of state '${id}' changed`);
+				return !changedObj.notChanged
+			}
+		} catch (err: any) {
+			console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+		}
+
+		return false;
+	}
 
 }
 

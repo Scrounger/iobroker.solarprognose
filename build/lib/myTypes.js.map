@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/lib/myTypes.ts"],
+  "sourcesContent": ["export interface dataStructure {\r\n    preferredNextApiRequestAt: preferredNextApiRequestAt;\r\n    status: number;\r\n    iLastPredictionGenerationEpochTime: number;\r\n    datalinename: string;\r\n    data: { [key: number]: Array<number> } | number\r\n}\r\n\r\nexport interface preferredNextApiRequestAt {\r\n    secondOfHour: number;\r\n    epochTimeUtc: number;\r\n}\r\n\r\nexport interface tStateDefinition {\r\n    id?: string,\r\n    common?: any,\r\n    ignore?: boolean,\r\n}\r\n\r\nexport interface myJsonStructure {\r\n    timestamp: number;\r\n    val: number;\r\n    total: number;\r\n}\r\n\r\nexport const stateDefinition: { [key: string]: tStateDefinition; } = {\r\n    json: {\r\n        id: 'json',\r\n        common: {\r\n            type: 'json',\r\n            read: true,\r\n            write: false,\r\n            role: 'json',\r\n            def: '{}'\r\n        },\r\n    }\r\n}"],
+  "mappings": ";;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAyBO,MAAM,kBAAwD;AAAA,EACjE,MAAM;AAAA,IACF,IAAI;AAAA,IACJ,QAAQ;AAAA,MACJ,MAAM;AAAA,MACN,MAAM;AAAA,MACN,OAAO;AAAA,MACP,MAAM;AAAA,MACN,KAAK;AAAA,IACT;AAAA,EACJ;AACJ;",
+  "names": []
+}

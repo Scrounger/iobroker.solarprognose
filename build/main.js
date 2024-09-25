@@ -21,7 +21,10 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
+var myTypes = __toESM(require("./lib/myTypes"));
 class Solarprognose extends utils.Adapter {
+  testMode = true;
+  apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   constructor(options = {}) {
     super({
       ...options,
@@ -35,27 +38,12 @@ class Solarprognose extends utils.Adapter {
    * Is called when databases are connected and adapter received configuration.
    */
   async onReady() {
-    this.log.info("config option1: " + this.config.option1);
-    this.log.info("config option2: " + this.config.option2);
-    await this.setObjectNotExistsAsync("testVariable", {
-      type: "state",
-      common: {
-        name: "testVariable",
-        type: "boolean",
-        role: "indicator",
-        read: true,
-        write: true
-      },
-      native: {}
-    });
-    this.subscribeStates("testVariable");
-    await this.setStateAsync("testVariable", true);
-    await this.setStateAsync("testVariable", { val: true, ack: true });
-    await this.setStateAsync("testVariable", { val: true, ack: true, expire: 30 });
-    let result = await this.checkPasswordAsync("admin", "iobroker");
-    this.log.info("check user admin pw iobroker: " + result);
-    result = await this.checkGroupAsync("admin", "admin");
-    this.log.info("check group user admin group admin: " + result);
+    const logPrefix = "[onReady]:";
+    try {
+      await this.updateData();
+    } catch (error) {
+      this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
   }
   /**
    * Is called when adapter shuts down - callback has to be called under any circumstances!
@@ -106,6 +94,97 @@ class Solarprognose extends utils.Adapter {
   // 		}
   // 	}
   // }
+  async updateData() {
+    const logPrefix = "[updateData]:";
+    try {
+      if (this.config.project && this.config.accessToken) {
+        const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&type=hourly&_format=json`;
+        const data = await this.downloadData(url);
+        this.log.silly(JSON.stringify(data));
+        if (data) {
+          if (data.status === 0) {
+            if (data.data) {
+              let jsonResult = [];
+              for (const [timestamp, arr] of Object.entries(data.data)) {
+                jsonResult.push({
+                  timestamp: parseInt(timestamp),
+                  val: arr[0],
+                  total: arr[1]
+                });
+              }
+              await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["json"], JSON.stringify(jsonResult), "json");
+            } else {
+              this.log.error(`${logPrefix} received data has no forecast data!`);
+            }
+          } else {
+            this.log.error(`${logPrefix} data received with error code: ${data.status}`);
+          }
+        } else {
+          this.log.error(`${logPrefix} no data received!`);
+        }
+      } else {
+        this.log.error(`${logPrefix} project and / or access token missing. Please check your adapter configuration!`);
+      }
+    } catch (error) {
+      this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
+  }
+  async downloadData(url) {
+    const logPrefix = "[downloadData]:";
+    try {
+      if (!this.testMode) {
+        const response = await fetch(url);
+        if (response.status === 200) {
+          this.log.debug(`${logPrefix} data successfully received`);
+          return await response.json();
+        } else {
+          this.log.error(`${logPrefix} status code: ${response.status}`);
+        }
+      } else {
+        this.log.warn(`${logPrefix} Test mode is active!`);
+        const objects = require("../test/testData.json");
+        return objects;
+      }
+    } catch (error) {
+      this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
+    return void 0;
+  }
+  async createOrUpdateState(idChannel, stateDef, val, key) {
+    const logPrefix = "[createOrUpdateState]:";
+    try {
+      const id = `${idChannel}.${stateDef.id}`;
+      if (stateDef.common.unit && Object.prototype.hasOwnProperty.call(this.config, stateDef.common.unit)) {
+        stateDef.common.unit = this.getTranslation(this.config[stateDef.common.unit]) || stateDef.common.unit;
+      }
+      if (!await this.objectExists(id)) {
+        this.log.debug(`${logPrefix} creating state '${id}'`);
+        const obj = {
+          type: "state",
+          common: stateDef.common,
+          native: {}
+        };
+        await this.setObjectAsync(id, obj);
+      } else {
+        const obj = await this.getObjectAsync(id);
+        if (obj && obj.common) {
+          if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
+            await this.extendObject(id, { common: stateDef.common });
+            this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
+          }
+        }
+      }
+      let changedObj = void 0;
+      changedObj = await this.setStateChangedAsync(id, val, true);
+      if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, "notChanged") && !changedObj.notChanged) {
+        this.log.silly(`${logPrefix} value of state '${id}' changed`);
+        return !changedObj.notChanged;
+      }
+    } catch (err) {
+      console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+    }
+    return false;
+  }
 }
 if (require.main !== module) {
   module.exports = (options) => new Solarprognose(options);

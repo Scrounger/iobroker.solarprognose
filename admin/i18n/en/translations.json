@@ -1,5 +1,7 @@
 {
 	"solarprognose adapter settings": "Adapter settings for solarprognose",
-	"option1": "option1",
-	"option2": "option2"
+	"projectUsername": "Project / Username",
+	"accessToken": "Access token",
+	"You like the adapter? Then support me.": "You like the adapter? Then support me.",
+	"login data": "Login data"
 }
