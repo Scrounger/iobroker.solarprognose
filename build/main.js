@@ -26,9 +26,10 @@ var import_moment = __toESM(require("moment"));
 var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 class Solarprognose extends utils.Adapter {
-  testMode = true;
+  testMode = false;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
+  myTranslation;
   constructor(options = {}) {
     super({
       ...options,
@@ -45,6 +46,7 @@ class Solarprognose extends utils.Adapter {
   async onReady() {
     const logPrefix = "[onReady]:";
     try {
+      await this.loadTranslation();
       await this.updateData();
     } catch (error) {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -111,16 +113,18 @@ class Solarprognose extends utils.Adapter {
         this.log.info(`${logPrefix} updating data`);
         if (data) {
           if (data.status === 0) {
+            await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], data.status, "statusResponse", true);
             if (data.data) {
               let jsonResult = [];
               for (const [timestamp, arr] of Object.entries(data.data)) {
                 jsonResult.push({
-                  timestamp: parseInt(timestamp),
+                  human: (0, import_moment.default)(parseInt(timestamp) * 1e3).format(`ddd ${this.dateFormat} HH:mm`),
+                  timestamp: parseInt(timestamp) * 1e3,
                   val: arr[0],
                   total: arr[1]
                 });
               }
-              await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["json"], JSON.stringify(jsonResult), "json");
+              await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["jsonTable"], JSON.stringify(jsonResult), "jsonTable");
             } else {
               this.log.error(`${logPrefix} received data has no forecast data!`);
             }
@@ -129,8 +133,9 @@ class Solarprognose extends utils.Adapter {
             this.updateSchedule = schedule.scheduleJob(this.getNextUpdateTime(data.preferredNextApiRequestAt).toDate(), async () => {
               this.updateData();
             });
+            await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["lastUpdate"], (0, import_moment.default)().format(`ddd ${this.dateFormat} HH:mm:ss`), "lastUpdate");
           } else {
-            this.log.error(`${logPrefix} data received with error code: ${data.status}`);
+            this.log.error(`${logPrefix} data received with error code: ${data.status} - ${myTypes.stateDefinition.statusResponse.common.states[data.status]}`);
           }
         } else {
           this.log.error(`${logPrefix} no data received!`);
@@ -163,10 +168,11 @@ class Solarprognose extends utils.Adapter {
     }
     return void 0;
   }
-  async createOrUpdateState(idChannel, stateDef, val, key) {
+  async createOrUpdateState(idChannel, stateDef, val, key, forceUpdate = false) {
     const logPrefix = "[createOrUpdateState]:";
     try {
       const id = `${idChannel}.${stateDef.id}`;
+      stateDef.common.name = this.getTranslation(key);
       if (stateDef.common.unit && Object.prototype.hasOwnProperty.call(this.config, stateDef.common.unit)) {
         stateDef.common.unit = this.getTranslation(this.config[stateDef.common.unit]) || stateDef.common.unit;
       }
@@ -181,19 +187,23 @@ class Solarprognose extends utils.Adapter {
       } else {
         const obj = await this.getObjectAsync(id);
         if (obj && obj.common) {
-          this.log.warn(JSON.stringify(obj.common));
-          this.log.warn(JSON.stringify(stateDef.common));
           if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
             await this.extendObject(id, { common: stateDef.common });
             this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
           }
         }
       }
-      let changedObj = void 0;
-      changedObj = await this.setStateChangedAsync(id, val, true);
-      if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, "notChanged") && !changedObj.notChanged) {
-        this.log.silly(`${logPrefix} value of state '${id}' changed`);
-        return !changedObj.notChanged;
+      if (forceUpdate) {
+        await this.setState(id, val, true);
+        this.log.silly(`${logPrefix} value of state '${id}' updated (force: ${forceUpdate})`);
+        return true;
+      } else {
+        let changedObj = void 0;
+        changedObj = await this.setStateChangedAsync(id, val, true);
+        if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, "notChanged") && !changedObj.notChanged) {
+          this.log.silly(`${logPrefix} value of state '${id}' changed`);
+          return !changedObj.notChanged;
+        }
       }
     } catch (err) {
       console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
@@ -221,6 +231,30 @@ class Solarprognose extends utils.Adapter {
       console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
     }
     return nextUpdate;
+  }
+  async loadTranslation() {
+    const logPrefix = "[loadTranslation]:";
+    try {
+      import_moment.default.locale(this.language || "en");
+      const fileName = `../admin/i18n/${this.language || "en"}/translations.json`;
+      this.myTranslation = (await Promise.resolve().then(() => __toESM(require(fileName)))).default;
+      this.log.debug(`${logPrefix} translation data loaded from '${fileName}'`);
+    } catch (err) {
+      console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+    }
+  }
+  getTranslation(str) {
+    const logPrefix = "[getTranslation]:";
+    try {
+      if (this.myTranslation && this.myTranslation[str]) {
+        return this.myTranslation[str];
+      } else {
+        this.log.warn(`${logPrefix} no translation for key '${str}' exists!`);
+      }
+    } catch (err) {
+      console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+    }
+    return str;
   }
 }
 if (require.main !== module) {

@@ -1,5 +1,10 @@
 {
     "solarprognose adapter settings": "Настройки адаптера для Solarprognose",
     "projectUsername": "Проект / Имя пользователя",
-    "accessToken": "Токен доступа"
+    "accessToken": "Токен доступа",
+    "You like the adapter? Then support me.": "Вам нравится адаптер? Тогда поддержите меня.",
+    "login data": "Данные для входа",
+    "jsonTable": "Таблица JSON",
+    "statusResponse": "ответ на статус API",
+    "lastUpdate": "последнее обновление данных"
 }

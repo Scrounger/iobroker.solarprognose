@@ -7,14 +7,16 @@
 import * as utils from '@iobroker/adapter-core';
 import moment from 'moment';
 import * as schedule from "node-schedule";
+import * as fs from 'fs';
 
 import * as myTypes from './lib/myTypes';
 
 class Solarprognose extends utils.Adapter {
-	testMode = true;
+	testMode = false;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
+	myTranslation: { [key: string]: any; } | undefined;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -37,7 +39,7 @@ class Solarprognose extends utils.Adapter {
 
 		try {
 			// Initialize your adapter here
-
+			await this.loadTranslation();
 			await this.updateData();
 
 		} catch (error: any) {
@@ -117,18 +119,20 @@ class Solarprognose extends utils.Adapter {
 
 				if (data) {
 					if (data.status === 0) {
+						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['statusResponse'], data.status, 'statusResponse', true);
 
 						if (data.data) {
 							let jsonResult: Array<myTypes.myJsonStructure> = [];
 							for (const [timestamp, arr] of Object.entries(data.data)) {
 								jsonResult.push({
-									timestamp: parseInt(timestamp),
+									human: moment(parseInt(timestamp) * 1000).format(`ddd ${this.dateFormat} HH:mm`),
+									timestamp: parseInt(timestamp) * 1000,
 									val: arr[0],
 									total: arr[1]
 								})
 							}
 
-							await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['json'], JSON.stringify(jsonResult), 'json');
+							await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
 						} else {
 							this.log.error(`${logPrefix} received data has no forecast data!`);
 						}
@@ -138,8 +142,10 @@ class Solarprognose extends utils.Adapter {
 							this.updateData();
 						});
 
+						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['lastUpdate'], moment().format(`ddd ${this.dateFormat} HH:mm:ss`), 'lastUpdate');
+
 					} else {
-						this.log.error(`${logPrefix} data received with error code: ${data.status}`);
+						this.log.error(`${logPrefix} data received with error code: ${data.status} - ${myTypes.stateDefinition.statusResponse.common.states[data.status]}`);
 					}
 				} else {
 					this.log.error(`${logPrefix} no data received!`);
@@ -162,6 +168,7 @@ class Solarprognose extends utils.Adapter {
 
 				if (response.status === 200) {
 					this.log.debug(`${logPrefix} data successfully received`);
+
 					return await response.json();
 				} else {
 					this.log.error(`${logPrefix} status code: ${response.status}`);
@@ -179,13 +186,13 @@ class Solarprognose extends utils.Adapter {
 		return undefined;
 	}
 
-	private async createOrUpdateState(idChannel: string, stateDef: myTypes.tStateDefinition, val: string | number, key: string): Promise<boolean> {
+	private async createOrUpdateState(idChannel: string, stateDef: myTypes.tStateDefinition, val: string | number, key: string, forceUpdate: boolean = false): Promise<boolean> {
 		const logPrefix = '[createOrUpdateState]:';
 
 		try {
 			const id = `${idChannel}.${stateDef.id}`
 
-			// stateDef.common.name = this.getTranslation(key);
+			stateDef.common.name = this.getTranslation(key);
 
 			if (stateDef.common.unit && Object.prototype.hasOwnProperty.call(this.config, stateDef.common.unit)) {
 				//@ts-ignore
@@ -216,13 +223,20 @@ class Solarprognose extends utils.Adapter {
 				}
 			}
 
-			let changedObj: any = undefined;
+			if (forceUpdate) {
+				await this.setState(id, val, true);
+				this.log.silly(`${logPrefix} value of state '${id}' updated (force: ${forceUpdate})`);
 
-			changedObj = await this.setStateChangedAsync(id, val, true);
+				return true;
+			} else {
+				let changedObj: any = undefined;
 
-			if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, 'notChanged') && !changedObj.notChanged) {
-				this.log.silly(`${logPrefix} value of state '${id}' changed`);
-				return !changedObj.notChanged
+				changedObj = await this.setStateChangedAsync(id, val, true);
+
+				if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, 'notChanged') && !changedObj.notChanged) {
+					this.log.silly(`${logPrefix} value of state '${id}' changed`);
+					return !changedObj.notChanged
+				}
 			}
 		} catch (err: any) {
 			console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
@@ -260,6 +274,39 @@ class Solarprognose extends utils.Adapter {
 		}
 
 		return nextUpdate;
+	}
+
+	private async loadTranslation(): Promise<void> {
+		const logPrefix = '[loadTranslation]:';
+
+		try {
+			moment.locale(this.language || 'en');
+
+			const fileName = `../admin/i18n/${this.language || 'en'}/translations.json`
+
+			this.myTranslation = (await import(fileName, { assert: { type: 'json' } })).default;
+
+			this.log.debug(`${logPrefix} translation data loaded from '${fileName}'`);
+
+		} catch (err: any) {
+			console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+		}
+	}
+
+	private getTranslation(str: string): string {
+		const logPrefix = '[getTranslation]:';
+
+		try {
+			if (this.myTranslation && this.myTranslation[str]) {
+				return this.myTranslation[str];
+			} else {
+				this.log.warn(`${logPrefix} no translation for key '${str}' exists!`);
+			}
+		} catch (err: any) {
+			console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+		}
+
+		return str;
 	}
 }
 

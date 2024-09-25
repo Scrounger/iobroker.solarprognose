@@ -1,5 +1,10 @@
 {
     "solarprognose adapter settings": "Solarprognose 的适配器设置",
     "projectUsername": "项目/用户名",
-    "accessToken": "访问令牌"
+    "accessToken": "访问令牌",
+    "You like the adapter? Then support me.": "你喜欢这个适配器吗？那就支持我吧。",
+    "login data": "登录数据",
+    "jsonTable": "JSON 表",
+    "statusResponse": "API状态响应",
+    "lastUpdate": "数据的最后更新"
 }

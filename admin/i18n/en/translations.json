@@ -3,5 +3,8 @@
 	"projectUsername": "Project / Username",
 	"accessToken": "Access token",
 	"You like the adapter? Then support me.": "You like the adapter? Then support me.",
-	"login data": "Login data"
+	"login data": "Login data",
+	"jsonTable": "JSON Table",
+	"statusResponse": "api status response",
+	"lastUpdate": "last update of the data"
 }
