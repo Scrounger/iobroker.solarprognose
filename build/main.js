@@ -110,7 +110,6 @@ class Solarprognose extends utils.Adapter {
         const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&type=hourly&_format=json`;
         const data = await this.downloadData(url);
         this.log.silly(JSON.stringify(data));
-        this.log.info(`${logPrefix} updating data`);
         if (data) {
           if (data.status === 0) {
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], data.status, "statusResponse", true);
@@ -119,7 +118,7 @@ class Solarprognose extends utils.Adapter {
               for (const [timestamp, arr] of Object.entries(data.data)) {
                 jsonResult.push({
                   human: (0, import_moment.default)(parseInt(timestamp) * 1e3).format(`ddd ${this.dateFormat} HH:mm`),
-                  timestamp: parseInt(timestamp) * 1e3,
+                  timestamp: parseInt(timestamp),
                   val: arr[0],
                   total: arr[1]
                 });
@@ -130,10 +129,12 @@ class Solarprognose extends utils.Adapter {
             }
             if (this.updateSchedule)
               this.updateSchedule.cancel();
-            this.updateSchedule = schedule.scheduleJob(this.getNextUpdateTime(data.preferredNextApiRequestAt).toDate(), async () => {
+            const nextUpdateTime = this.getNextUpdateTime(data.preferredNextApiRequestAt);
+            this.updateSchedule = schedule.scheduleJob(nextUpdateTime.toDate(), async () => {
               this.updateData();
             });
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["lastUpdate"], (0, import_moment.default)().format(`ddd ${this.dateFormat} HH:mm:ss`), "lastUpdate");
+            this.log.info(`${logPrefix} data successfully updated, next update: ${nextUpdateTime.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
           } else {
             this.log.error(`${logPrefix} data received with error code: ${data.status} - ${myTypes.stateDefinition.statusResponse.common.states[data.status]}`);
           }

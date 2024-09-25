@@ -18,30 +18,30 @@
             }
         },
         "titleLang": {
-            "en": "Solarprognose.de",
-            "de": "Solarprognose.de",
-            "ru": "Solarprognose.de",
-            "pt": "Solarprognose.de",
-            "nl": "Solarprognose.de",
-            "fr": "Prognose Solaire.de",
-            "it": "Solarprognose.de",
-            "es": "Solarprognose.de",
-            "pl": "Solarprognose.de",
-            "uk": "Solarprognose.de",
-            "zh-cn": "Solarprognose.de"
+            "en": "Solarprognose.de API",
+            "de": "Solarprognose.de API",
+            "ru": "Solarprognose.de API",
+            "pt": "API do Solarprognose.de",
+            "nl": "Solarprognose.de API",
+            "fr": "API Solarprognose.de",
+            "it": "Solarprognose.de API",
+            "es": "Solarprognose.de API",
+            "pl": "Solarprognose.de API",
+            "uk": "JavaScript licenses API Веб-сайт Go1.13.8",
+            "zh-cn": "太阳预测.de API"
         },
         "desc": {
-            "en": "solarprognose",
-            "de": "Solarprognose",
-            "ru": "солнечный прогноз",
-            "pt": "solarprognóstico",
-            "nl": "zonne-prognose",
-            "fr": "pronostic solaire",
-            "it": "solarprognose",
-            "es": "pronóstico solar",
-            "pl": "prognoza słoneczna",
-            "uk": "сонячний прогноз",
-            "zh-cn": "太阳预测"
+            "en": "Solar forecast based on the API from solarprognose.de",
+            "de": "Solarprognose basierend auf der API von solarprognose.de",
+            "ru": "Солнечные прогнозы на основе API от Solarprognose.de",
+            "pt": "Previsão solar com base na API do solarprognose.de",
+            "nl": "Zonnevoorspelling gebaseerd op de API van zonneprognose.de",
+            "fr": "Prévisions solaires basées sur l'API de solarprognose.de",
+            "it": "Previsione solare basata sull'API da Solarprognose.de",
+            "es": "Previsión solar basada en la API de solarprognose.de",
+            "pl": "Prognoza słoneczna oparta na API z solarprognose.de",
+            "uk": "Сонячний прогноз на основі API від solarprognose.de",
+            "zh-cn": "太阳预报基于来自太阳预测的 API.de"
         },
         "authors": [
             "Scrounger <scrounger@gmx.net>"

@@ -7,12 +7,12 @@
 import * as utils from '@iobroker/adapter-core';
 import moment from 'moment';
 import * as schedule from "node-schedule";
-import * as fs from 'fs';
 
 import * as myTypes from './lib/myTypes';
+import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = false;
+	testMode = true;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -115,7 +115,7 @@ class Solarprognose extends utils.Adapter {
 
 				this.log.silly(JSON.stringify(data));
 
-				this.log.info(`${logPrefix} updating data`);
+
 
 				if (data) {
 					if (data.status === 0) {
@@ -126,10 +126,12 @@ class Solarprognose extends utils.Adapter {
 							for (const [timestamp, arr] of Object.entries(data.data)) {
 								jsonResult.push({
 									human: moment(parseInt(timestamp) * 1000).format(`ddd ${this.dateFormat} HH:mm`),
-									timestamp: parseInt(timestamp) * 1000,
+									timestamp: parseInt(timestamp),
 									val: arr[0],
 									total: arr[1]
-								})
+								});
+
+
 							}
 
 							await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
@@ -138,11 +140,14 @@ class Solarprognose extends utils.Adapter {
 						}
 
 						if (this.updateSchedule) this.updateSchedule.cancel()
-						this.updateSchedule = schedule.scheduleJob(this.getNextUpdateTime(data.preferredNextApiRequestAt).toDate(), async () => {
+						const nextUpdateTime = this.getNextUpdateTime(data.preferredNextApiRequestAt);
+						this.updateSchedule = schedule.scheduleJob(nextUpdateTime.toDate(), async () => {
 							this.updateData();
 						});
 
 						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['lastUpdate'], moment().format(`ddd ${this.dateFormat} HH:mm:ss`), 'lastUpdate');
+
+						this.log.info(`${logPrefix} data successfully updated, next update: ${nextUpdateTime.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
 
 					} else {
 						this.log.error(`${logPrefix} data received with error code: ${data.status} - ${myTypes.stateDefinition.statusResponse.common.states[data.status]}`);
