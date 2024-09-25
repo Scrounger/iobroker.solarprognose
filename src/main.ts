@@ -5,18 +5,22 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
+import moment from 'moment';
+import * as schedule from "node-schedule";
 
-// Load your modules here, e.g.:
 import * as myTypes from './lib/myTypes';
 
 class Solarprognose extends utils.Adapter {
 	testMode = true;
+
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
+	updateSchedule: schedule.Job | undefined = undefined;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
 			...options,
 			name: 'solarprognose',
+			useFormatDate: true
 		});
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -46,11 +50,7 @@ class Solarprognose extends utils.Adapter {
 	 */
 	private onUnload(callback: () => void): void {
 		try {
-			// Here you must clear all timeouts or intervals that may still be active
-			// clearTimeout(timeout1);
-			// clearTimeout(timeout2);
-			// ...
-			// clearInterval(interval1);
+			if (this.updateSchedule) this.updateSchedule.cancel()
 
 			callback();
 		} catch (e) {
@@ -113,6 +113,8 @@ class Solarprognose extends utils.Adapter {
 
 				this.log.silly(JSON.stringify(data));
 
+				this.log.info(`${logPrefix} updating data`);
+
 				if (data) {
 					if (data.status === 0) {
 
@@ -130,6 +132,12 @@ class Solarprognose extends utils.Adapter {
 						} else {
 							this.log.error(`${logPrefix} received data has no forecast data!`);
 						}
+
+						if (this.updateSchedule) this.updateSchedule.cancel()
+						this.updateSchedule = schedule.scheduleJob(this.getNextUpdateTime(data.preferredNextApiRequestAt).toDate(), async () => {
+							this.updateData();
+						});
+
 					} else {
 						this.log.error(`${logPrefix} data received with error code: ${data.status}`);
 					}
@@ -199,6 +207,7 @@ class Solarprognose extends utils.Adapter {
 				// update State if needed
 				const obj = await this.getObjectAsync(id);
 
+
 				if (obj && obj.common) {
 					if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
 						await this.extendObject(id, { common: stateDef.common });
@@ -222,6 +231,36 @@ class Solarprognose extends utils.Adapter {
 		return false;
 	}
 
+	private getNextUpdateTime(preferredNextApiRequestAt: myTypes.preferredNextApiRequestAt | undefined): moment.Moment {
+		const logPrefix = '[getNextUpdateTime]:';
+
+		let nextUpdate = moment().add(1, 'hours');
+
+		try {
+			if (preferredNextApiRequestAt && preferredNextApiRequestAt.epochTimeUtc) {
+				const nextApiRequestLog = moment(preferredNextApiRequestAt.epochTimeUtc * 1000).format(`ddd ${this.dateFormat} HH:mm:ss`);
+
+				if (!moment().isBefore(moment(preferredNextApiRequestAt.epochTimeUtc * 1000))) {
+					// 'preferredNextApiRequestAt' is in the past
+					this.log.debug(`${logPrefix} preferredNextApiRequestAt: '${nextApiRequestLog}' is in the past! Next update: ${nextUpdate.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
+				} else if ((moment(preferredNextApiRequestAt.epochTimeUtc * 1000).diff(moment()) / (1000 * 60 * 60)) >= 1.1) {
+					// 'preferredNextApiRequestAt' is more than one hour in the future
+					this.log.debug(`${logPrefix} preferredNextApiRequestAt: '${nextApiRequestLog}' is more than one hour in the future! Next update: ${nextUpdate.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
+				} else {
+					// using 'preferredNextApiRequestAt'
+					nextUpdate = moment(preferredNextApiRequestAt.epochTimeUtc * 1000);
+					this.log.debug(`${logPrefix} next update: ${moment(preferredNextApiRequestAt.epochTimeUtc * 1000).format(`ddd ${this.dateFormat} HH:mm:ss`)} by 'preferredNextApiRequestAt'`);
+				}
+			} else {
+				this.log.debug(`${logPrefix} no 'preferredNextApiRequestAt' exist, next update: ${nextUpdate.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
+			}
+
+		} catch (err: any) {
+			console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+		}
+
+		return nextUpdate;
+	}
 }
 
 if (require.main !== module) {

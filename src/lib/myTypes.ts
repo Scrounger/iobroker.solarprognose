@@ -27,6 +27,7 @@ export const stateDefinition: { [key: string]: tStateDefinition; } = {
     json: {
         id: 'json',
         common: {
+            name: 'json table',
             type: 'json',
             read: true,
             write: false,

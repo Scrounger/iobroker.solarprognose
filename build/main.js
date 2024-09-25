@@ -1,3 +1,4 @@
+"use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -21,14 +22,18 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
+var import_moment = __toESM(require("moment"));
+var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 class Solarprognose extends utils.Adapter {
   testMode = true;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
+  updateSchedule = void 0;
   constructor(options = {}) {
     super({
       ...options,
-      name: "solarprognose"
+      name: "solarprognose",
+      useFormatDate: true
     });
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
@@ -50,6 +55,8 @@ class Solarprognose extends utils.Adapter {
    */
   onUnload(callback) {
     try {
+      if (this.updateSchedule)
+        this.updateSchedule.cancel();
       callback();
     } catch (e) {
       callback();
@@ -101,6 +108,7 @@ class Solarprognose extends utils.Adapter {
         const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&type=hourly&_format=json`;
         const data = await this.downloadData(url);
         this.log.silly(JSON.stringify(data));
+        this.log.info(`${logPrefix} updating data`);
         if (data) {
           if (data.status === 0) {
             if (data.data) {
@@ -116,6 +124,11 @@ class Solarprognose extends utils.Adapter {
             } else {
               this.log.error(`${logPrefix} received data has no forecast data!`);
             }
+            if (this.updateSchedule)
+              this.updateSchedule.cancel();
+            this.updateSchedule = schedule.scheduleJob(this.getNextUpdateTime(data.preferredNextApiRequestAt).toDate(), async () => {
+              this.updateData();
+            });
           } else {
             this.log.error(`${logPrefix} data received with error code: ${data.status}`);
           }
@@ -168,6 +181,8 @@ class Solarprognose extends utils.Adapter {
       } else {
         const obj = await this.getObjectAsync(id);
         if (obj && obj.common) {
+          this.log.warn(JSON.stringify(obj.common));
+          this.log.warn(JSON.stringify(stateDef.common));
           if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
             await this.extendObject(id, { common: stateDef.common });
             this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
@@ -184,6 +199,28 @@ class Solarprognose extends utils.Adapter {
       console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
     }
     return false;
+  }
+  getNextUpdateTime(preferredNextApiRequestAt) {
+    const logPrefix = "[getNextUpdateTime]:";
+    let nextUpdate = (0, import_moment.default)().add(1, "hours");
+    try {
+      if (preferredNextApiRequestAt && preferredNextApiRequestAt.epochTimeUtc) {
+        const nextApiRequestLog = (0, import_moment.default)(preferredNextApiRequestAt.epochTimeUtc * 1e3).format(`ddd ${this.dateFormat} HH:mm:ss`);
+        if (!(0, import_moment.default)().isBefore((0, import_moment.default)(preferredNextApiRequestAt.epochTimeUtc * 1e3))) {
+          this.log.debug(`${logPrefix} preferredNextApiRequestAt: '${nextApiRequestLog}' is in the past! Next update: ${nextUpdate.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
+        } else if ((0, import_moment.default)(preferredNextApiRequestAt.epochTimeUtc * 1e3).diff((0, import_moment.default)()) / (1e3 * 60 * 60) >= 1.1) {
+          this.log.debug(`${logPrefix} preferredNextApiRequestAt: '${nextApiRequestLog}' is more than one hour in the future! Next update: ${nextUpdate.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
+        } else {
+          nextUpdate = (0, import_moment.default)(preferredNextApiRequestAt.epochTimeUtc * 1e3);
+          this.log.debug(`${logPrefix} next update: ${(0, import_moment.default)(preferredNextApiRequestAt.epochTimeUtc * 1e3).format(`ddd ${this.dateFormat} HH:mm:ss`)} by 'preferredNextApiRequestAt'`);
+        }
+      } else {
+        this.log.debug(`${logPrefix} no 'preferredNextApiRequestAt' exist, next update: ${nextUpdate.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
+      }
+    } catch (err) {
+      console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
+    }
+    return nextUpdate;
   }
 }
 if (require.main !== module) {
