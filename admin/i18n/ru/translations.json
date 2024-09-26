@@ -22,5 +22,6 @@
     "dailyMax": "макс. дни",
     "inXDays": "через {0} дней",
     "today": "сегодня",
-    "xOClock": "{0} часов"
+    "xOClock": "{0} часов",
+    "solarprognoseAlgorithm": "алгоритм"
 }

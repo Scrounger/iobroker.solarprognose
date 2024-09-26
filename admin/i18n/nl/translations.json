@@ -22,5 +22,6 @@
     "dailyMax": "maximaal dagen",
     "inXDays": "over {0} dagen",
     "today": "Vandaag",
-    "xOClock": "{0} uur"
+    "xOClock": "{0} uur",
+    "solarprognoseAlgorithm": "algoritme"
 }

@@ -91,6 +91,7 @@
         "project": "",
         "accessToken": "",
         "solarprognoseItem": "inverter",
+        "solarprognoseAlgorithm": "own-v1",
         "id": null,
         "jsonTableEnabled": true,
         "hourlyEnabled": true,

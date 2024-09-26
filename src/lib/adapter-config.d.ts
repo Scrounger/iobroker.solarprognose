@@ -8,6 +8,7 @@ declare global {
 			accessToken: string;
 			solarprognoseItem: string;
 			solarprognoseId: number;
+			solarprognoseAlgorithm: string;
 			jsonTableEnabled: boolean;
 			hourlyEnabled: boolean;
 			dailyEnabled: boolean;

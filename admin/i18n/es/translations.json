@@ -22,5 +22,6 @@
     "dailyMax": "máx. días",
     "inXDays": "en {0} días",
     "today": "hoy",
-    "xOClock": "{0} en punto"
+    "xOClock": "{0} en punto",
+    "solarprognoseAlgorithm": "algoritmo"
 }

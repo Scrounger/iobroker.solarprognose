@@ -27,7 +27,7 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = true;
+  testMode = false;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   myTranslation;
@@ -108,7 +108,7 @@ class Solarprognose extends utils.Adapter {
     const logPrefix = "[updateData]:";
     try {
       if (this.config.project && this.config.accessToken && this.config.solarprognoseItem && this.config.solarprognoseId) {
-        const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&item=${this.config.solarprognoseItem}&id=${this.config.solarprognoseId}&type=hourly&_format=json`;
+        const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&item=${this.config.solarprognoseItem}&id=${this.config.solarprognoseId}&algorithm=${this.config.solarprognoseAlgorithm}&type=hourly&_format=json`;
         const response = await this.downloadData(url);
         this.log.silly(JSON.stringify(response));
         if (response) {

@@ -62,6 +62,26 @@
 			"sm": 12,
 			"md": 2
 		},
+		"solarprognoseAlgorithm": {
+			"type": "select",
+			"label": "solarprognoseAlgorithm",
+			"options": [
+				{
+					"label": "own-v1",
+					"value": "own-v1"
+				},
+				{
+					"label": "mosmix",
+					"value": "mosmix"
+				},
+				{
+					"label": "clearsky",
+					"value": "clearsky"
+				}
+			],
+			"sm": 12,
+			"md": 2
+		},
 		"dividerForecast": {
 			"newLine": true,
 			"type": "header",

@@ -9,6 +9,7 @@
 	"lastUpdate": "last update of the data",
 	"solarprognoseItem": "item",
 	"solarprognoseId": "id",
+	"solarprognoseAlgorithm": "algorithm",
 	"location": "location",
 	"plant": "plant",
 	"inverter": "inverter",

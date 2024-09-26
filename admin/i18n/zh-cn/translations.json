@@ -22,5 +22,6 @@
     "dailyMax": "最大限度。天",
     "inXDays": "{0} 天后",
     "today": "今天",
-    "xOClock": "{0} 点"
+    "xOClock": "{0} 点",
+    "solarprognoseAlgorithm": "算法"
 }
