@@ -12,5 +12,8 @@
     "location": "ubicación",
     "plant": "planta",
     "inverter": "inversor",
-    "module_field": "campo del módulo"
+    "module_field": "campo del módulo",
+    "date": "fecha y hora",
+    "power": "fuerza",
+    "energy": "la energía se acumula"
 }

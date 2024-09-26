@@ -12,5 +12,8 @@
     "location": "emplacement",
     "plant": "usine",
     "inverter": "onduleur",
-    "module_field": "champ de module"
+    "module_field": "champ de module",
+    "date": "date et heure",
+    "power": "pouvoir",
+    "energy": "l'énergie s'accumule"
 }

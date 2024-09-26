@@ -25,6 +25,7 @@ var utils = __toESM(require("@iobroker/adapter-core"));
 var import_moment = __toESM(require("moment"));
 var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
+var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
   testMode = false;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
@@ -140,15 +141,23 @@ class Solarprognose extends utils.Adapter {
     try {
       if (data) {
         const jsonResult = [];
-        for (const [timestamp, arr] of Object.entries(data)) {
+        for (const [key, arr] of Object.entries(data)) {
+          const timestamp = parseInt(key);
+          const momentTs = (0, import_moment.default)(timestamp * 1e3);
           jsonResult.push({
-            human: (0, import_moment.default)(parseInt(timestamp) * 1e3).format(`ddd ${this.dateFormat} HH:mm`),
-            timestamp: parseInt(timestamp),
+            human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
+            timestamp,
             val: arr[0],
             total: arr[1]
           });
-          await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["jsonTable"], JSON.stringify(jsonResult), "jsonTable");
+          if (!momentTs.isBefore((0, import_moment.default)().startOf("day"))) {
+            const channelId = `${myHelper.zeroPad(momentTs.diff((0, import_moment.default)().startOf("day"), "days"), 2)}.${myHelper.zeroPad(momentTs.hours(), 2)}h`;
+            await this.createOrUpdateState(channelId, myTypes.stateDefinition["date"], momentTs.format(`ddd ${this.dateFormat} HH:mm`), "date");
+            await this.createOrUpdateState(channelId, myTypes.stateDefinition["power"], arr[0], "power");
+            await this.createOrUpdateState(channelId, myTypes.stateDefinition["energy"], arr[1], "energy");
+          }
         }
+        await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["jsonTable"], JSON.stringify(jsonResult), "jsonTable");
       } else {
         this.log.error(`${logPrefix} received data has no forecast data!`);
       }

@@ -12,5 +12,8 @@
     "location": "Standort",
     "plant": "Anlage",
     "inverter": "Wechselrichter",
-    "module_field": "Modulfeld"
+    "module_field": "Modulfeld",
+    "date": "Datum und Uhrzeit",
+    "power": "Leistung",
+    "energy": "Energie sammelt sich"
 }

@@ -12,5 +12,8 @@
     "location": "地点",
     "plant": "植物",
     "inverter": "逆变器",
-    "module_field": "模块字段"
+    "module_field": "模块字段",
+    "date": "日期和时间",
+    "power": "力量",
+    "energy": "能量积累"
 }

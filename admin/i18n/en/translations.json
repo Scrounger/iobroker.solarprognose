@@ -12,5 +12,8 @@
 	"location": "location",
 	"plant": "plant",
 	"inverter": "inverter",
-	"module_field": "module field"
+	"module_field": "module field",
+	"date": "date and time",
+	"power": "power",
+	"energy": "energy accumulates"
 }

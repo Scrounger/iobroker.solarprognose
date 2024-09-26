@@ -12,5 +12,8 @@
     "location": "lokalizacja",
     "plant": "zakład",
     "inverter": "falownik",
-    "module_field": "pole modułu"
+    "module_field": "pole modułu",
+    "date": "data i godzina",
+    "power": "moc",
+    "energy": "gromadzi się energia"
 }

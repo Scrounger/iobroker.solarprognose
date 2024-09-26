@@ -153,16 +153,27 @@ class Solarprognose extends utils.Adapter {
 			if (data) {
 				const jsonResult: Array<myTypes.myJsonStructure> = [];
 
-				for (const [timestamp, arr] of Object.entries(data)) {
+				for (const [key, arr] of Object.entries(data)) {
+					const timestamp = parseInt(key);
+					const momentTs = moment(timestamp * 1000)
+
 					jsonResult.push({
-						human: moment(parseInt(timestamp) * 1000).format(`ddd ${this.dateFormat} HH:mm`),
-						timestamp: parseInt(timestamp),
+						human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
+						timestamp: timestamp,
 						val: arr[0],
 						total: arr[1]
 					});
 
-					await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
+					if (!momentTs.isBefore(moment().startOf('day'))) {
+						const channelId = `${myHelper.zeroPad(momentTs.diff(moment().startOf('day'), 'days'), 2)}.${myHelper.zeroPad(momentTs.hours(), 2)}h`;
+						// filter out past data
+						await this.createOrUpdateState(channelId, myTypes.stateDefinition['date'], momentTs.format(`ddd ${this.dateFormat} HH:mm`), 'date');
+						await this.createOrUpdateState(channelId, myTypes.stateDefinition['power'], arr[0], 'power');
+						await this.createOrUpdateState(channelId, myTypes.stateDefinition['energy'], arr[1], 'energy');
+					}
 				}
+
+				await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
 
 			} else {
 				this.log.error(`${logPrefix} received data has no forecast data!`);

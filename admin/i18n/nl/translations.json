@@ -12,5 +12,8 @@
     "location": "locatie",
     "plant": "plant",
     "inverter": "omvormer",
-    "module_field": "moduleveld"
+    "module_field": "moduleveld",
+    "date": "datum en tijd",
+    "power": "stroom",
+    "energy": "energie accumuleert"
 }

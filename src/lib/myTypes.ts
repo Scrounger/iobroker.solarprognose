@@ -96,4 +96,16 @@ export const stateDefinition: { [key: string]: tStateDefinition; } = {
         id: 'lastUpdate',
         common: commonDef.string
     },
+    date: {
+        id: 'date',
+        common: commonDef.string
+    },
+    power: {
+        id: 'power',
+        common: { ...commonDef.number, ... { unit: 'kW' } }
+    },
+    energy: {
+        id: 'energy',
+        common: { ...commonDef.number, ... { unit: 'kWh' } }
+    },
 }
