@@ -12,7 +12,7 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = true;
+	testMode = false;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -167,17 +167,18 @@ class Solarprognose extends utils.Adapter {
 
 					if (!momentTs.isBefore(moment().startOf('day'))) {
 						// filter out past data
-						const channelDayId = `${myHelper.zeroPad(momentTs.diff(moment().startOf('day'), 'days'), 2)}`;
+						const diffDays = momentTs.diff(moment().startOf('day'), 'days');
+						const channelDayId = `${myHelper.zeroPad(diffDays, 2)}`;
 						const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`
 
-						if (this.config.dailyEnabled) {
+						if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
 							if (!Object.keys(data)[i + 1] || (Object.keys(data)[i + 1] && !momentTs.isSame(moment(parseInt(Object.keys(data)[i + 1]) * 1000), 'day'))) {
-								await this.createOrUpdateChannel(channelDayId, "");
+								await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation('today') : this.getTranslation('inXDays').replace('{0}', diffDays.toString()));
 
 								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy'], arr[1], 'energy');
 							}
 						} else {
-							if (this.config.hourlyEnabled) {
+							if (this.config.hourlyEnabled && diffDays <= this.config.dailyMax) {
 								if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition['energy'].id}`)) {
 									await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition['energy'].id}`);
 									this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition['energy'].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
@@ -190,8 +191,8 @@ class Solarprognose extends utils.Adapter {
 							}
 						}
 
-						if (this.config.hourlyEnabled) {
-							await this.createOrUpdateChannel(`${channelDayId}.${channelHourId}`, "");
+						if (this.config.hourlyEnabled && diffDays <= this.config.dailyMax) {
+							await this.createOrUpdateChannel(`${channelDayId}.${channelHourId}`, this.getTranslation('xOClock').replace('{0}', momentTs.hour().toString()));
 
 							await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition['date'], momentTs.format(`ddd ${this.dateFormat} HH:mm`), 'date');
 							await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition['power'], arr[0], 'power');
@@ -205,28 +206,13 @@ class Solarprognose extends utils.Adapter {
 					}
 				}
 
-				// for (const [key, arr] of Object.entries(data)) {
-				// 	const timestamp = parseInt(key);
-				// 	const momentTs = moment(timestamp * 1000)
-
-				// 	jsonResult.push({
-				// 		human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
-				// 		timestamp: timestamp,
-				// 		val: arr[0],
-				// 		total: arr[1]
-				// 	});
-
-				// 	if (!momentTs.isBefore(moment().startOf('day'))) {
-				// 		const channelId = `${myHelper.zeroPad(momentTs.diff(moment().startOf('day'), 'days'), 2)}.${myHelper.zeroPad(momentTs.hours(), 2)}h`;
-				// 		// filter out past data
-				// 		await this.createOrUpdateState(channelId, myTypes.stateDefinition['date'], momentTs.format(`ddd ${this.dateFormat} HH:mm`), 'date');
-				// 		await this.createOrUpdateState(channelId, myTypes.stateDefinition['power'], arr[0], 'power');
-				// 		await this.createOrUpdateState(channelId, myTypes.stateDefinition['energy'], arr[1], 'energy');
-				// 	}
-				// }
-
 				if (this.config.jsonTableEnabled) {
 					await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
+				} else {
+					if (myTypes.stateDefinition['jsonTable'].id && await this.objectExists(myTypes.stateDefinition['jsonTable'].id)) {
+						await this.delObjectAsync(myTypes.stateDefinition['jsonTable'].id);
+						this.log.info(`${logPrefix} deleting state '${myTypes.stateDefinition['jsonTable'].id}' (config.jsonTableEnabled: ${this.config.jsonTableEnabled})`);
+					}
 				}
 
 			} else {

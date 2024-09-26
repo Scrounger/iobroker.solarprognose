@@ -152,15 +152,16 @@ class Solarprognose extends utils.Adapter {
             total: arr[1]
           });
           if (!momentTs.isBefore((0, import_moment.default)().startOf("day"))) {
-            const channelDayId = `${myHelper.zeroPad(momentTs.diff((0, import_moment.default)().startOf("day"), "days"), 2)}`;
+            const diffDays = momentTs.diff((0, import_moment.default)().startOf("day"), "days");
+            const channelDayId = `${myHelper.zeroPad(diffDays, 2)}`;
             const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`;
-            if (this.config.dailyEnabled) {
+            if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
               if (!Object.keys(data)[i + 1] || Object.keys(data)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(data)[i + 1]) * 1e3), "day")) {
-                await this.createOrUpdateChannel(channelDayId, "");
+                await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
               }
             } else {
-              if (this.config.hourlyEnabled) {
+              if (this.config.hourlyEnabled && diffDays <= this.config.dailyMax) {
                 if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`)) {
                   await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`);
                   this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition["energy"].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
@@ -172,8 +173,8 @@ class Solarprognose extends utils.Adapter {
                 }
               }
             }
-            if (this.config.hourlyEnabled) {
-              await this.createOrUpdateChannel(`${channelDayId}.${channelHourId}`, "");
+            if (this.config.hourlyEnabled && diffDays <= this.config.dailyMax) {
+              await this.createOrUpdateChannel(`${channelDayId}.${channelHourId}`, this.getTranslation("xOClock").replace("{0}", momentTs.hour().toString()));
               await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition["date"], momentTs.format(`ddd ${this.dateFormat} HH:mm`), "date");
               await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition["power"], arr[0], "power");
               await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition["energy"], arr[1], "energy");
@@ -187,6 +188,11 @@ class Solarprognose extends utils.Adapter {
         }
         if (this.config.jsonTableEnabled) {
           await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["jsonTable"], JSON.stringify(jsonResult), "jsonTable");
+        } else {
+          if (myTypes.stateDefinition["jsonTable"].id && await this.objectExists(myTypes.stateDefinition["jsonTable"].id)) {
+            await this.delObjectAsync(myTypes.stateDefinition["jsonTable"].id);
+            this.log.info(`${logPrefix} deleting state '${myTypes.stateDefinition["jsonTable"].id}' (config.jsonTableEnabled: ${this.config.jsonTableEnabled})`);
+          }
         }
       } else {
         this.log.error(`${logPrefix} received data has no forecast data!`);

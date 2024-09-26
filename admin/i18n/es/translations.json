@@ -15,9 +15,12 @@
     "module_field": "campo del módulo",
     "date": "fecha y hora",
     "power": "fuerza",
-    "energy": "la energía se acumula",
+    "energy": "energía total acumulada",
     "forecast": "pronóstico",
     "hourlyEnabled": "cada hora",
     "dailyEnabled": "a diario",
-    "dailyMax": "máx. días"
+    "dailyMax": "máx. días",
+    "inXDays": "en {0} días",
+    "today": "hoy",
+    "xOClock": "{0} en punto"
 }

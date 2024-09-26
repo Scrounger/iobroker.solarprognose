@@ -15,9 +15,12 @@
     "module_field": "moduleveld",
     "date": "datum en tijd",
     "power": "stroom",
-    "energy": "energie accumuleert",
+    "energy": "totale energie gecumuleerd",
     "forecast": "voorspelling",
     "hourlyEnabled": "per uur",
     "dailyEnabled": "dagelijks",
-    "dailyMax": "maximaal dagen"
+    "dailyMax": "maximaal dagen",
+    "inXDays": "over {0} dagen",
+    "today": "Vandaag",
+    "xOClock": "{0} uur"
 }

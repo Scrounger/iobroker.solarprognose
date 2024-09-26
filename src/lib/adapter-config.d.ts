@@ -11,7 +11,7 @@ declare global {
 			jsonTableEnabled: boolean;
 			hourlyEnabled: boolean;
 			dailyEnabled: boolean;
-			dailyMax: boolean;
+			dailyMax: number;
 		}
 	}
 }
