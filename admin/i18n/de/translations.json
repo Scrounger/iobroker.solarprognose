@@ -15,5 +15,9 @@
     "module_field": "Modulfeld",
     "date": "Datum und Uhrzeit",
     "power": "Leistung",
-    "energy": "Energie sammelt sich"
+    "energy": "Energie sammelt sich",
+    "forecast": "Vorhersage",
+    "hourlyEnabled": "stündlich",
+    "dailyEnabled": "täglich",
+    "dailyMax": "max. Tage"
 }

@@ -3,7 +3,7 @@ export interface dataStructure {
     status: number;
     iLastPredictionGenerationEpochTime: number;
     datalinename: string;
-    data: { [key: number]: Array<number> } | number
+    data: { [key: number]: Array<number> }
 }
 
 export interface preferredNextApiRequestAt {

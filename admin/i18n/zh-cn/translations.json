@@ -15,5 +15,9 @@
     "module_field": "模块字段",
     "date": "日期和时间",
     "power": "力量",
-    "energy": "能量积累"
+    "energy": "能量积累",
+    "forecast": "预报",
+    "hourlyEnabled": "每小时",
+    "dailyEnabled": "日常的",
+    "dailyMax": "最大限度。天"
 }

@@ -15,5 +15,9 @@
 	"module_field": "module field",
 	"date": "date and time",
 	"power": "power",
-	"energy": "energy accumulates"
+	"energy": "energy accumulates",
+	"forecast": "forecast",
+	"hourlyEnabled": "hourly",
+	"dailyEnabled": "daily",
+	"dailyMax": "max. days"
 }

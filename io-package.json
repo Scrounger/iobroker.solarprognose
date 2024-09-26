@@ -91,7 +91,11 @@
         "project": "",
         "accessToken": "",
         "solarprognoseItem": "inverter",
-        "id": null
+        "id": null,
+        "jsonTableEnabled": true,
+        "hourlyEnabled": true,
+        "dailyEnabled": true,
+        "dailyMax": 4
     },
     "objects": [],
     "instanceObjects": []

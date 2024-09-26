@@ -15,5 +15,9 @@
     "module_field": "champ de module",
     "date": "date et heure",
     "power": "pouvoir",
-    "energy": "l'énergie s'accumule"
+    "energy": "l'énergie s'accumule",
+    "forecast": "prévision",
+    "hourlyEnabled": "horaire",
+    "dailyEnabled": "tous les jours",
+    "dailyMax": "maximum. jours"
 }

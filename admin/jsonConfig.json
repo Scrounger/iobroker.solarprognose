@@ -61,6 +61,42 @@
 			"label": "solarprognoseId",
 			"sm": 12,
 			"md": 2
+		},
+		"dividerForecast": {
+			"newLine": true,
+			"type": "header",
+			"text": "forecast",
+			"size": 2
+		},
+		"jsonTableEnabled": {
+			"type": "checkbox",
+			"label": "jsonTable",
+			"newLine": true,
+			"sm": 12,
+			"md": 2
+		},
+		"hourlyEnabled": {
+			"newLine": true,
+			"type": "checkbox",
+			"label": "hourlyEnabled",
+			"sm": 12,
+			"md": 1
+		},
+		"dailyEnabled": {
+			"newLine": true,
+			"type": "checkbox",
+			"label": "dailyEnabled",
+			"sm": 12,
+			"md": 1
+		},
+		"dailyMax": {
+			"type": "number",
+			"label": "dailyMax",
+			"disabled": "!data.dailyEnabled",
+			"min": 0,
+			"max": 20,
+			"sm": 12,
+			"md": 1
 		}
 	}
 }

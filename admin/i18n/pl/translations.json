@@ -15,5 +15,9 @@
     "module_field": "pole modułu",
     "date": "data i godzina",
     "power": "moc",
-    "energy": "gromadzi się energia"
+    "energy": "gromadzi się energia",
+    "forecast": "prognoza",
+    "hourlyEnabled": "cogodzinny",
+    "dailyEnabled": "codziennie",
+    "dailyMax": "maks. dni"
 }

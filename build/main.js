@@ -27,7 +27,7 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = false;
+  testMode = true;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   myTranslation;
@@ -141,9 +141,10 @@ class Solarprognose extends utils.Adapter {
     try {
       if (data) {
         const jsonResult = [];
-        for (const [key, arr] of Object.entries(data)) {
-          const timestamp = parseInt(key);
+        for (var i = 0; i <= Object.keys(data).length - 1; i++) {
+          const timestamp = parseInt(Object.keys(data)[i]);
           const momentTs = (0, import_moment.default)(timestamp * 1e3);
+          const arr = Object.values(data)[i];
           jsonResult.push({
             human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
             timestamp,
@@ -151,13 +152,42 @@ class Solarprognose extends utils.Adapter {
             total: arr[1]
           });
           if (!momentTs.isBefore((0, import_moment.default)().startOf("day"))) {
-            const channelId = `${myHelper.zeroPad(momentTs.diff((0, import_moment.default)().startOf("day"), "days"), 2)}.${myHelper.zeroPad(momentTs.hours(), 2)}h`;
-            await this.createOrUpdateState(channelId, myTypes.stateDefinition["date"], momentTs.format(`ddd ${this.dateFormat} HH:mm`), "date");
-            await this.createOrUpdateState(channelId, myTypes.stateDefinition["power"], arr[0], "power");
-            await this.createOrUpdateState(channelId, myTypes.stateDefinition["energy"], arr[1], "energy");
+            const channelDayId = `${myHelper.zeroPad(momentTs.diff((0, import_moment.default)().startOf("day"), "days"), 2)}`;
+            const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`;
+            if (this.config.dailyEnabled) {
+              if (!Object.keys(data)[i + 1] || Object.keys(data)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(data)[i + 1]) * 1e3), "day")) {
+                await this.createOrUpdateChannel(channelDayId, "");
+                await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
+              }
+            } else {
+              if (this.config.hourlyEnabled) {
+                if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`)) {
+                  await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`);
+                  this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition["energy"].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+                }
+              } else {
+                if (await this.objectExists(`${channelDayId}`)) {
+                  await this.delObjectAsync(`${channelDayId}`, { recursive: true });
+                  this.log.info(`${logPrefix} deleting channel '${channelDayId}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+                }
+              }
+            }
+            if (this.config.hourlyEnabled) {
+              await this.createOrUpdateChannel(`${channelDayId}.${channelHourId}`, "");
+              await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition["date"], momentTs.format(`ddd ${this.dateFormat} HH:mm`), "date");
+              await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition["power"], arr[0], "power");
+              await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition["energy"], arr[1], "energy");
+            } else {
+              if (await this.objectExists(`${channelDayId}.${channelHourId}`)) {
+                await this.delObjectAsync(`${channelDayId}.${channelHourId}`, { recursive: true });
+                this.log.info(`${logPrefix} deleting channel '${channelDayId}.${channelHourId}' (config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+              }
+            }
           }
         }
-        await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["jsonTable"], JSON.stringify(jsonResult), "jsonTable");
+        if (this.config.jsonTableEnabled) {
+          await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["jsonTable"], JSON.stringify(jsonResult), "jsonTable");
+        }
       } else {
         this.log.error(`${logPrefix} received data has no forecast data!`);
       }
@@ -227,6 +257,33 @@ class Solarprognose extends utils.Adapter {
       console.error(`${logPrefix} error: ${err.message}, stack: ${err.stack}`);
     }
     return false;
+  }
+  async createOrUpdateChannel(id, name) {
+    const logPrefix = "[createOrUpdateChannel]:";
+    try {
+      const common = {
+        name
+        // icon: myDeviceImages[nvr.type] ? myDeviceImages[nvr.type] : null
+      };
+      if (!await this.objectExists(id)) {
+        this.log.debug(`${logPrefix} creating channel '${id}'`);
+        await this.setObjectAsync(id, {
+          type: "channel",
+          common,
+          native: {}
+        });
+      } else {
+        const obj = await this.getObjectAsync(id);
+        if (obj && obj.common) {
+          if (JSON.stringify(obj.common) !== JSON.stringify(common)) {
+            await this.extendObject(id, { common });
+            this.log.debug(`${logPrefix} channel updated '${id}'`);
+          }
+        }
+      }
+    } catch (error) {
+      this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
   }
   getNextUpdateTime(preferredNextApiRequestAt) {
     const logPrefix = "[getNextUpdateTime]:";

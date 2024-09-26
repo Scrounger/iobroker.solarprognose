@@ -15,5 +15,9 @@
     "module_field": "moduleveld",
     "date": "datum en tijd",
     "power": "stroom",
-    "energy": "energie accumuleert"
+    "energy": "energie accumuleert",
+    "forecast": "voorspelling",
+    "hourlyEnabled": "per uur",
+    "dailyEnabled": "dagelijks",
+    "dailyMax": "maximaal dagen"
 }

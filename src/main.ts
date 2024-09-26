@@ -12,7 +12,7 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = false;
+	testMode = true;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -153,9 +153,10 @@ class Solarprognose extends utils.Adapter {
 			if (data) {
 				const jsonResult: Array<myTypes.myJsonStructure> = [];
 
-				for (const [key, arr] of Object.entries(data)) {
-					const timestamp = parseInt(key);
-					const momentTs = moment(timestamp * 1000)
+				for (var i = 0; i <= Object.keys(data).length - 1; i++) {
+					const timestamp = parseInt(Object.keys(data)[i]);
+					const momentTs = moment(timestamp * 1000);
+					const arr = Object.values(data)[i];
 
 					jsonResult.push({
 						human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
@@ -165,15 +166,68 @@ class Solarprognose extends utils.Adapter {
 					});
 
 					if (!momentTs.isBefore(moment().startOf('day'))) {
-						const channelId = `${myHelper.zeroPad(momentTs.diff(moment().startOf('day'), 'days'), 2)}.${myHelper.zeroPad(momentTs.hours(), 2)}h`;
 						// filter out past data
-						await this.createOrUpdateState(channelId, myTypes.stateDefinition['date'], momentTs.format(`ddd ${this.dateFormat} HH:mm`), 'date');
-						await this.createOrUpdateState(channelId, myTypes.stateDefinition['power'], arr[0], 'power');
-						await this.createOrUpdateState(channelId, myTypes.stateDefinition['energy'], arr[1], 'energy');
+						const channelDayId = `${myHelper.zeroPad(momentTs.diff(moment().startOf('day'), 'days'), 2)}`;
+						const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`
+
+						if (this.config.dailyEnabled) {
+							if (!Object.keys(data)[i + 1] || (Object.keys(data)[i + 1] && !momentTs.isSame(moment(parseInt(Object.keys(data)[i + 1]) * 1000), 'day'))) {
+								await this.createOrUpdateChannel(channelDayId, "");
+
+								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy'], arr[1], 'energy');
+							}
+						} else {
+							if (this.config.hourlyEnabled) {
+								if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition['energy'].id}`)) {
+									await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition['energy'].id}`);
+									this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition['energy'].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+								}
+							} else {
+								if (await this.objectExists(`${channelDayId}`)) {
+									await this.delObjectAsync(`${channelDayId}`, { recursive: true });
+									this.log.info(`${logPrefix} deleting channel '${channelDayId}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+								}
+							}
+						}
+
+						if (this.config.hourlyEnabled) {
+							await this.createOrUpdateChannel(`${channelDayId}.${channelHourId}`, "");
+
+							await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition['date'], momentTs.format(`ddd ${this.dateFormat} HH:mm`), 'date');
+							await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition['power'], arr[0], 'power');
+							await this.createOrUpdateState(`${channelDayId}.${channelHourId}`, myTypes.stateDefinition['energy'], arr[1], 'energy');
+						} else {
+							if (await this.objectExists(`${channelDayId}.${channelHourId}`)) {
+								await this.delObjectAsync(`${channelDayId}.${channelHourId}`, { recursive: true });
+								this.log.info(`${logPrefix} deleting channel '${channelDayId}.${channelHourId}' (config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+							}
+						}
 					}
 				}
 
-				await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
+				// for (const [key, arr] of Object.entries(data)) {
+				// 	const timestamp = parseInt(key);
+				// 	const momentTs = moment(timestamp * 1000)
+
+				// 	jsonResult.push({
+				// 		human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
+				// 		timestamp: timestamp,
+				// 		val: arr[0],
+				// 		total: arr[1]
+				// 	});
+
+				// 	if (!momentTs.isBefore(moment().startOf('day'))) {
+				// 		const channelId = `${myHelper.zeroPad(momentTs.diff(moment().startOf('day'), 'days'), 2)}.${myHelper.zeroPad(momentTs.hours(), 2)}h`;
+				// 		// filter out past data
+				// 		await this.createOrUpdateState(channelId, myTypes.stateDefinition['date'], momentTs.format(`ddd ${this.dateFormat} HH:mm`), 'date');
+				// 		await this.createOrUpdateState(channelId, myTypes.stateDefinition['power'], arr[0], 'power');
+				// 		await this.createOrUpdateState(channelId, myTypes.stateDefinition['energy'], arr[1], 'energy');
+				// 	}
+				// }
+
+				if (this.config.jsonTableEnabled) {
+					await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
+				}
 
 			} else {
 				this.log.error(`${logPrefix} received data has no forecast data!`);
@@ -268,6 +322,37 @@ class Solarprognose extends utils.Adapter {
 		}
 
 		return false;
+	}
+
+	private async createOrUpdateChannel(id: string, name: string): Promise<void> {
+		const logPrefix = '[createOrUpdateChannel]:';
+
+		try {
+			const common = {
+				name: name,
+				// icon: myDeviceImages[nvr.type] ? myDeviceImages[nvr.type] : null
+			};
+
+			if (!await this.objectExists(id)) {
+				this.log.debug(`${logPrefix} creating channel '${id}'`);
+				await this.setObjectAsync(id, {
+					type: 'channel',
+					common: common,
+					native: {}
+				});
+			} else {
+				const obj = await this.getObjectAsync(id);
+
+				if (obj && obj.common) {
+					if (JSON.stringify(obj.common) !== JSON.stringify(common)) {
+						await this.extendObject(id, { common: common });
+						this.log.debug(`${logPrefix} channel updated '${id}'`);
+					}
+				}
+			}
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
 	}
 
 	private getNextUpdateTime(preferredNextApiRequestAt: myTypes.preferredNextApiRequestAt | undefined): moment.Moment {
