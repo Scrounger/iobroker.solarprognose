@@ -109,36 +109,20 @@ class Solarprognose extends utils.Adapter {
 		const logPrefix = '[updateData]:';
 
 		try {
-			if (this.config.project && this.config.accessToken) {
+			if (this.config.project && this.config.accessToken && this.config.solarprognoseItem && this.config.solarprognoseId) {
 				const url = `${this.apiEndpoint}?access-token=${this.config.accessToken}&project=${this.config.project}&item=${this.config.solarprognoseItem}&id=${this.config.solarprognoseId}&type=hourly&_format=json`;
-				const data = await this.downloadData(url);
+				const response = await this.downloadData(url);
 
-				this.log.silly(JSON.stringify(data));
+				this.log.silly(JSON.stringify(response));
 
+				if (response) {
+					if (response.status === 0) {
+						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['statusResponse'], response.status, 'statusResponse', true);
 
-
-				if (data) {
-					if (data.status === 0) {
-						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['statusResponse'], data.status, 'statusResponse', true);
-
-						if (data.data) {
-							const jsonResult: Array<myTypes.myJsonStructure> = [];
-							for (const [timestamp, arr] of Object.entries(data.data)) {
-								jsonResult.push({
-									human: moment(parseInt(timestamp) * 1000).format(`ddd ${this.dateFormat} HH:mm`),
-									timestamp: parseInt(timestamp),
-									val: arr[0],
-									total: arr[1]
-								});
-							}
-
-							await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
-						} else {
-							this.log.error(`${logPrefix} received data has no forecast data!`);
-						}
+						await this.processData(response.data);
 
 						if (this.updateSchedule) this.updateSchedule.cancel()
-						const nextUpdateTime = this.getNextUpdateTime(data.preferredNextApiRequestAt);
+						const nextUpdateTime = this.getNextUpdateTime(response.preferredNextApiRequestAt);
 						this.updateSchedule = schedule.scheduleJob(nextUpdateTime.toDate(), async () => {
 							this.updateData();
 						});
@@ -148,15 +132,42 @@ class Solarprognose extends utils.Adapter {
 						this.log.info(`${logPrefix} data successfully updated, next update: ${nextUpdateTime.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
 
 					} else {
-						this.log.error(`${logPrefix} data received with error code: ${data.status} - ${myTypes.stateDefinition.statusResponse.common.states[data.status]}`);
+						this.log.error(`${logPrefix} data received with error code: ${response.status} - ${myTypes.stateDefinition.statusResponse.common.states[response.status]}`);
 					}
 				} else {
 					this.log.error(`${logPrefix} no data received!`);
 				}
 
 			} else {
-				this.log.error(`${logPrefix} project and / or access token missing. Please check your adapter configuration!`);
+				this.log.error(`${logPrefix} settings missing. Please check your adapter configuration!`);
 			}
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
+	}
+
+	private async processData(data: { [key: number]: Array<number> } | number) {
+		const logPrefix = '[processData]:';
+
+		try {
+			if (data) {
+				const jsonResult: Array<myTypes.myJsonStructure> = [];
+
+				for (const [timestamp, arr] of Object.entries(data)) {
+					jsonResult.push({
+						human: moment(parseInt(timestamp) * 1000).format(`ddd ${this.dateFormat} HH:mm`),
+						timestamp: parseInt(timestamp),
+						val: arr[0],
+						total: arr[1]
+					});
+
+					await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['jsonTable'], JSON.stringify(jsonResult), 'jsonTable');
+				}
+
+			} else {
+				this.log.error(`${logPrefix} received data has no forecast data!`);
+			}
+
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
 		}
