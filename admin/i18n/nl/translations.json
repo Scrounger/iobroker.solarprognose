@@ -23,5 +23,9 @@
     "inXDays": "over {0} dagen",
     "today": "Vandaag",
     "xOClock": "{0} uur",
-    "solarprognoseAlgorithm": "algoritme"
+    "solarprognoseAlgorithm": "algoritme",
+    "dividerApiSettings": "API-instellingen",
+    "api settings": "API-instellingen",
+    "myLocation": "locatie",
+    "tomorrow": "morgen"
 }

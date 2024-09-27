@@ -23,5 +23,9 @@
     "inXDays": "{0} 天后",
     "today": "今天",
     "xOClock": "{0} 点",
-    "solarprognoseAlgorithm": "算法"
+    "solarprognoseAlgorithm": "算法",
+    "dividerApiSettings": "API设置",
+    "api settings": "API设置",
+    "myLocation": "地点",
+    "tomorrow": "明天"
 }

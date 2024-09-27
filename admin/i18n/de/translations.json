@@ -7,8 +7,8 @@
     "jsonTable": "JSON-Tabelle",
     "statusResponse": "API-Statusantwort",
     "lastUpdate": "letzte Aktualisierung der Daten",
-    "solarprognoseItem": "Artikel",
-    "solarprognoseId": "Ausweis",
+    "solarprognoseItem": "Typ",
+    "solarprognoseId": "Id",
     "location": "Standort",
     "plant": "Anlage",
     "inverter": "Wechselrichter",
@@ -23,5 +23,9 @@
     "inXDays": "in {0} Tagen",
     "today": "Heute",
     "xOClock": "{0} Uhr",
-    "solarprognoseAlgorithm": "Algorithmus"
+    "solarprognoseAlgorithm": "Algorithmus",
+    "dividerApiSettings": "API-Einstellungen",
+    "api settings": "API-Einstellungen",
+    "myLocation": "Standort",
+    "tomorrow": "Morgen"
 }

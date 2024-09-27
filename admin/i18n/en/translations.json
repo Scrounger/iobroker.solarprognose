@@ -10,7 +10,7 @@
 	"solarprognoseItem": "item",
 	"solarprognoseId": "id",
 	"solarprognoseAlgorithm": "algorithm",
-	"location": "location",
+	"myLocation": "location",
 	"plant": "plant",
 	"inverter": "inverter",
 	"module_field": "module field",
@@ -23,5 +23,7 @@
 	"dailyMax": "max. days",
 	"inXDays": "in {0} days",
 	"today": "today",
-	"xOClock": "{0} o'clock"
+	"tomorrow": "tomorrow",
+	"xOClock": "{0} o'clock",
+	"api settings": "API settings"
 }

@@ -23,5 +23,9 @@
     "inXDays": "dans {0} jours",
     "today": "aujourd'hui",
     "xOClock": "{0} heures",
-    "solarprognoseAlgorithm": "algorithme"
+    "solarprognoseAlgorithm": "algorithme",
+    "dividerApiSettings": "Paramètres de l'API",
+    "api settings": "Paramètres de l'API",
+    "myLocation": "emplacement",
+    "tomorrow": "demain"
 }

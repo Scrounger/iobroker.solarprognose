@@ -157,7 +157,7 @@ class Solarprognose extends utils.Adapter {
             const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`;
             if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
               if (!Object.keys(data)[i + 1] || Object.keys(data)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(data)[i + 1]) * 1e3), "day")) {
-                await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
+                await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : diffDays === 1 ? this.getTranslation("tomorrow") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
               }
             } else {

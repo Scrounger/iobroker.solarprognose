@@ -32,12 +32,19 @@
 			"sm": 12,
 			"md": 2
 		},
+		"dividerApiSettings": {
+			"newLine": true,
+			"type": "header",
+			"text": "api settings",
+			"size": 2
+		},
 		"solarprognoseItem": {
+			"newLine": true,
 			"type": "select",
 			"label": "solarprognoseItem",
 			"options": [
 				{
-					"label": "location",
+					"label": "myLocation",
 					"value": "location"
 				},
 				{
