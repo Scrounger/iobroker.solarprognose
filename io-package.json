@@ -1,103 +1,116 @@
 {
-    "common": {
-        "name": "solarprognose",
-        "version": "0.0.1",
-        "news": {
-            "0.0.1": {
-                "en": "initial release",
-                "de": "Erstveröffentlichung",
-                "ru": "Начальная версия",
-                "pt": "lançamento inicial",
-                "nl": "Eerste uitgave",
-                "fr": "Première version",
-                "it": "Versione iniziale",
-                "es": "Versión inicial",
-                "pl": "Pierwsze wydanie",
-                "uk": "Початкова версія",
-                "zh-cn": "首次出版"
-            }
-        },
-        "titleLang": {
-            "en": "Solarprognose.de API",
-            "de": "Solarprognose.de API",
-            "ru": "Solarprognose.de API",
-            "pt": "API do Solarprognose.de",
-            "nl": "Solarprognose.de API",
-            "fr": "API Solarprognose.de",
-            "it": "Solarprognose.de API",
-            "es": "Solarprognose.de API",
-            "pl": "Solarprognose.de API",
-            "uk": "JavaScript licenses API Веб-сайт Go1.13.8",
-            "zh-cn": "太阳预测.de API"
-        },
-        "desc": {
-            "en": "Solar forecast based on the API from solarprognose.de",
-            "de": "Solarprognose basierend auf der API von solarprognose.de",
-            "ru": "Солнечные прогнозы на основе API от Solarprognose.de",
-            "pt": "Previsão solar com base na API do solarprognose.de",
-            "nl": "Zonnevoorspelling gebaseerd op de API van zonneprognose.de",
-            "fr": "Prévisions solaires basées sur l'API de solarprognose.de",
-            "it": "Previsione solare basata sull'API da Solarprognose.de",
-            "es": "Previsión solar basada en la API de solarprognose.de",
-            "pl": "Prognoza słoneczna oparta na API z solarprognose.de",
-            "uk": "Сонячний прогноз на основі API від solarprognose.de",
-            "zh-cn": "太阳预报基于来自太阳预测的 API.de"
-        },
-        "authors": [
-            "Scrounger <scrounger@gmx.net>"
-        ],
-        "keywords": [
-            "pv",
-            "forecast",
-            "api"
-        ],
-        "licenseInformation": {
-            "type": "free",
-            "license": "MIT"
-        },
-        "platform": "Javascript/Node.js",
-        "icon": "solarprognose.png",
-        "enabled": true,
-        "extIcon": "https://raw.githubusercontent.com/Scrounger/ioBroker.solarprognose/main/admin/solarprognose.png",
-        "readme": "https://github.com/Scrounger/ioBroker.solarprognose/blob/main/README.md",
-        "loglevel": "info",
-        "tier": 3,
-        "mode": "daemon",
-        "type": "weather",
-        "compact": true,
-        "connectionType": "cloud",
-        "dataSource": "poll",
-        "adminUI": {
-            "config": "json"
-        },
-        "dependencies": [
-            {
-                "js-controller": ">=3.3.22"
-            }
-        ],
-        "globalDependencies": [
-            {
-                "admin": ">=5.1.13"
-            }
-        ]
+  "common": {
+    "name": "solarprognose",
+    "version": "1.0.0",
+    "news": {
+      "1.0.0": {
+        "en": "initial release",
+        "de": "erstausstrahlung",
+        "ru": "первоначальный выпуск",
+        "pt": "lançamento inicial",
+        "nl": "eerste release",
+        "fr": "libération initiale",
+        "it": "rilascio iniziale",
+        "es": "liberación inicial",
+        "pl": "początkowe zwolnienie",
+        "uk": "початковий реліз",
+        "zh-cn": "初步释放"
+      },
+      "0.0.1": {
+        "en": "initial release",
+        "de": "Erstveröffentlichung",
+        "ru": "Начальная версия",
+        "pt": "lançamento inicial",
+        "nl": "Eerste uitgave",
+        "fr": "Première version",
+        "it": "Versione iniziale",
+        "es": "Versión inicial",
+        "pl": "Pierwsze wydanie",
+        "uk": "Початкова версія",
+        "zh-cn": "首次出版"
+      }
     },
-    "encryptedNative": [
-        "accessToken"
-    ],
-    "protectedNative": [
-        "accessToken"
-    ],
-    "native": {
-        "project": "",
-        "accessToken": "",
-        "solarprognoseItem": "inverter",
-        "solarprognoseAlgorithm": "own-v1",
-        "id": null,
-        "jsonTableEnabled": true,
-        "hourlyEnabled": true,
-        "dailyEnabled": true,
-        "dailyMax": 4
+    "titleLang": {
+      "en": "Solarprognose.de API",
+      "de": "Solarprognose.de API",
+      "ru": "Solarprognose.de API",
+      "pt": "API do Solarprognose.de",
+      "nl": "Solarprognose.de API",
+      "fr": "API Solarprognose.de",
+      "it": "Solarprognose.de API",
+      "es": "Solarprognose.de API",
+      "pl": "Solarprognose.de API",
+      "uk": "JavaScript licenses API Веб-сайт Go1.13.8",
+      "zh-cn": "太阳预测.de API"
     },
-    "objects": [],
-    "instanceObjects": []
+    "desc": {
+      "en": "Solar forecast based on the API from solarprognose.de",
+      "de": "Solarprognose basierend auf der API von solarprognose.de",
+      "ru": "Солнечные прогнозы на основе API от Solarprognose.de",
+      "pt": "Previsão solar com base na API do solarprognose.de",
+      "nl": "Zonnevoorspelling gebaseerd op de API van zonneprognose.de",
+      "fr": "Prévisions solaires basées sur l'API de solarprognose.de",
+      "it": "Previsione solare basata sull'API da Solarprognose.de",
+      "es": "Previsión solar basada en la API de solarprognose.de",
+      "pl": "Prognoza słoneczna oparta na API z solarprognose.de",
+      "uk": "Сонячний прогноз на основі API від solarprognose.de",
+      "zh-cn": "太阳预报基于来自太阳预测的 API.de"
+    },
+    "authors": [
+      "Scrounger <scrounger@gmx.net>"
+    ],
+    "keywords": [
+      "pv",
+      "forecast",
+      "api"
+    ],
+    "licenseInformation": {
+      "type": "free",
+      "license": "MIT"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "solarprognose.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/Scrounger/ioBroker.solarprognose/main/admin/solarprognose.png",
+    "readme": "https://github.com/Scrounger/ioBroker.solarprognose/blob/main/README.md",
+    "loglevel": "info",
+    "tier": 3,
+    "mode": "daemon",
+    "type": "weather",
+    "compact": true,
+    "connectionType": "cloud",
+    "dataSource": "poll",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=3.3.22"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=5.1.13"
+      }
+    ]
+  },
+  "encryptedNative": [
+    "accessToken"
+  ],
+  "protectedNative": [
+    "accessToken"
+  ],
+  "native": {
+    "project": "",
+    "accessToken": "",
+    "solarprognoseItem": "inverter",
+    "solarprognoseAlgorithm": "own-v1",
+    "id": null,
+    "jsonTableEnabled": true,
+    "hourlyEnabled": true,
+    "dailyEnabled": true,
+    "dailyMax": 4
+  },
+  "objects": [],
+  "instanceObjects": []
 }
