@@ -141,7 +141,7 @@ class Solarprognose extends utils.Adapter {
     try {
       if (data) {
         const jsonResult = [];
-        for (var i = 0; i <= Object.keys(data).length - 1; i++) {
+        for (let i = 0; i <= Object.keys(data).length - 1; i++) {
           const timestamp = parseInt(Object.keys(data)[i]);
           const momentTs = (0, import_moment.default)(timestamp * 1e3);
           const arr = Object.values(data)[i];

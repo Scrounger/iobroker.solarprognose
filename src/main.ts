@@ -55,6 +55,8 @@ class Solarprognose extends utils.Adapter {
 			if (this.updateSchedule) this.updateSchedule.cancel()
 
 			callback();
+
+			// eslint-disable-next-line no-unused-vars
 		} catch (e) {
 			callback();
 		}
@@ -153,7 +155,7 @@ class Solarprognose extends utils.Adapter {
 			if (data) {
 				const jsonResult: Array<myTypes.myJsonStructure> = [];
 
-				for (var i = 0; i <= Object.keys(data).length - 1; i++) {
+				for (let i = 0; i <= Object.keys(data).length - 1; i++) {
 					const timestamp = parseInt(Object.keys(data)[i]);
 					const momentTs = moment(timestamp * 1000);
 					const arr = Object.values(data)[i];
@@ -241,7 +243,7 @@ class Solarprognose extends utils.Adapter {
 			} else {
 				this.log.warn(`${logPrefix} Test mode is active!`);
 
-				const { default: data } = await import('../test/testData.json', { assert: { type: "json" } });
+				const { default: data } = await import('../test/testData.json', { assert: { type: 'json' } });
 				return data;
 			}
 		} catch (error: any) {
