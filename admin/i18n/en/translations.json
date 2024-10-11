@@ -25,5 +25,8 @@
 	"today": "today",
 	"tomorrow": "tomorrow",
 	"xOClock": "{0} o'clock",
-	"api settings": "API settings"
+	"api settings": "API settings",
+	"Calculations": "Calculations",
+	"accuracy": "accuracy",
+	"Data point with energy generated today by PV": "Data point with energy generated today by PV"
 }

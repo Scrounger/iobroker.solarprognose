@@ -93,6 +93,10 @@ const stateDefinition = {
     id: "lastUpdate",
     common: commonDef.string
   },
+  accuracy: {
+    id: "accuracy",
+    common: commonDef.number
+  },
   date: {
     id: "date",
     common: commonDef.string

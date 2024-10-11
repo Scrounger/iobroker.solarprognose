@@ -13,6 +13,8 @@ declare global {
 			hourlyEnabled: boolean;
 			dailyEnabled: boolean;
 			dailyMax: number;
+			accuracyEnabled: number;
+			todayEnergyObject: string;
 		}
 	}
 }

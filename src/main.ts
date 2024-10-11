@@ -12,7 +12,7 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = false;
+	testMode = true;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -123,6 +123,10 @@ class Solarprognose extends utils.Adapter {
 
 						await this.processData(response.data);
 
+						if (this.config.hourlyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
+							await this.calcAccuracy();
+						}
+
 						if (this.updateSchedule) this.updateSchedule.cancel()
 						const nextUpdateTime = this.getNextUpdateTime(response.preferredNextApiRequestAt);
 						this.updateSchedule = schedule.scheduleJob(nextUpdateTime.toDate(), async () => {
@@ -219,6 +223,38 @@ class Solarprognose extends utils.Adapter {
 
 			} else {
 				this.log.error(`${logPrefix} received data has no forecast data!`);
+			}
+
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
+	}
+
+	private async calcAccuracy() {
+		const logPrefix = '[calcAccuracy]:';
+
+		try {
+			if (moment().hour() === 0) {
+				// reset at day change
+				await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], 0, 'accuracy');
+				this.log.debug(`${logPrefix} reset accuracy because of new day started`);
+			} else {
+				const idEnergy = `00.${myHelper.zeroPad(moment().hour(), 2)}h.${myTypes.stateDefinition['energy'].id}`
+
+				if ((await this.foreignObjectExists(this.config.todayEnergyObject)) && (await this.objectExists(idEnergy))) {
+
+					const forecastEnergy = await this.getStateAsync(idEnergy);
+					const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
+
+					if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
+						// @ts-ignore
+						const res = Math.round(todayEnergy.val / forecastEnergy.val * 100) / 100;
+
+						this.log.debug(`${logPrefix} new accuracy: ${res} (forecast: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
+
+						await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], res, 'accuracy');
+					}
+				}
 			}
 
 		} catch (error: any) {

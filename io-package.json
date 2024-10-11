@@ -109,7 +109,9 @@
     "jsonTableEnabled": true,
     "hourlyEnabled": true,
     "dailyEnabled": true,
-    "dailyMax": 4
+    "dailyMax": 4,
+    "accuracyEnabled": false,
+    "todayEnergyObject": ""
   },
   "objects": [],
   "instanceObjects": []

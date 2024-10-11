@@ -124,6 +124,29 @@
 			"label": "dailyEnabled",
 			"sm": 12,
 			"md": 1
+		},
+		"dividerCalculations": {
+			"newLine": true,
+			"type": "header",
+			"text": "Calculations",
+			"size": 2
+		},
+		"accuracyEnabled": {
+			"newLine": true,
+			"type": "checkbox",
+			"label": "accuracy",
+			"sm": 12,
+			"md": 1,
+			"disabled": "!data.hourlyEnabled"
+		},
+		"todayEnergyObject": {
+			"type": "objectId",
+			"label": "Data point with energy generated today by PV",
+			"sm": 6,
+			"md": 6,
+			"lg": 6,
+			"xs": 6,
+			"disabled": "!data.hourlyEnabled || !data.accuracyEnabled"
 		}
 	}
 }

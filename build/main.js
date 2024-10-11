@@ -27,7 +27,7 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = false;
+  testMode = true;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   myTranslation;
@@ -115,6 +115,9 @@ class Solarprognose extends utils.Adapter {
           if (response.status === 0) {
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], response.status, "statusResponse", true);
             await this.processData(response.data);
+            if (this.config.hourlyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
+              await this.calcAccuracy();
+            }
             if (this.updateSchedule)
               this.updateSchedule.cancel();
             const nextUpdateTime = this.getNextUpdateTime(response.preferredNextApiRequestAt);
@@ -196,6 +199,28 @@ class Solarprognose extends utils.Adapter {
         }
       } else {
         this.log.error(`${logPrefix} received data has no forecast data!`);
+      }
+    } catch (error) {
+      this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
+  }
+  async calcAccuracy() {
+    const logPrefix = "[calcAccuracy]:";
+    try {
+      if ((0, import_moment.default)().hour() === 0) {
+        await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], 0, "accuracy");
+        this.log.debug(`${logPrefix} reset accuracy because of new day started`);
+      } else {
+        const idEnergy = `00.${myHelper.zeroPad((0, import_moment.default)().hour(), 2)}h.${myTypes.stateDefinition["energy"].id}`;
+        if (await this.foreignObjectExists(this.config.todayEnergyObject) && await this.objectExists(idEnergy)) {
+          const forecastEnergy = await this.getStateAsync(idEnergy);
+          const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
+          if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
+            const res = Math.round(todayEnergy.val / forecastEnergy.val * 100) / 100;
+            this.log.debug(`${logPrefix} new accuracy: ${res} (forecast: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
+            await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], res, "accuracy");
+          }
+        }
       }
     } catch (error) {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

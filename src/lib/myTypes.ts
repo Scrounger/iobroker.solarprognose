@@ -96,6 +96,10 @@ export const stateDefinition: { [key: string]: tStateDefinition; } = {
         id: 'lastUpdate',
         common: commonDef.string
     },
+    accuracy: {
+        id: 'accuracy',
+        common: commonDef.number
+    },
     date: {
         id: 'date',
         common: commonDef.string

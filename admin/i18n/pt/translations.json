@@ -27,5 +27,8 @@
     "dividerApiSettings": "Configurações de API",
     "api settings": "Configurações de API",
     "myLocation": "localização",
-    "tomorrow": "amanhã"
+    "tomorrow": "amanhã",
+    "Calculations": "Cálculos",
+    "accuracy": "precisão",
+    "Data point with energy generated today by PV": "Ponto de dados com energia gerada hoje por energia fotovoltaica"
 }

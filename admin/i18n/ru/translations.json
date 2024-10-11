@@ -27,5 +27,8 @@
     "dividerApiSettings": "настройки API",
     "api settings": "настройки API",
     "myLocation": "расположение",
-    "tomorrow": "завтра"
+    "tomorrow": "завтра",
+    "Calculations": "Расчеты",
+    "accuracy": "точность",
+    "Data point with energy generated today by PV": "Точка данных с энергией, генерируемой сегодня фотоэлектрическими батареями"
 }
