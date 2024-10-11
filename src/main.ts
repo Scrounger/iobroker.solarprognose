@@ -12,7 +12,7 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = true;
+	testMode = false;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
