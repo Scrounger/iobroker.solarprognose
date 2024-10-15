@@ -27,7 +27,7 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = true;
+  testMode = false;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   myTranslation;
@@ -162,6 +162,12 @@ class Solarprognose extends utils.Adapter {
               if (!Object.keys(data)[i + 1] || Object.keys(data)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(data)[i + 1]) * 1e3), "day")) {
                 await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : diffDays === 1 ? this.getTranslation("tomorrow") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
+                if (momentTs.isSame((0, import_moment.default)(), "day") && await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`)) {
+                  const energyNow = await this.getStateAsync(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`);
+                  if (energyNow && (energyNow.val || (energyNow == null ? void 0 : energyNow.val) === 0)) {
+                    await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy_from_now"], arr[1] - energyNow.val, "energy_from_now");
+                  }
+                }
               }
               if (momentTs.isSame((0, import_moment.default)(), "day") && momentTs.hour() === (0, import_moment.default)().hour()) {
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy_now"], arr[1], "energy_now");
@@ -171,6 +177,14 @@ class Solarprognose extends utils.Adapter {
                 if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`)) {
                   await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`);
                   this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition["energy"].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+                }
+                if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`)) {
+                  await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`);
+                  this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition["energy_now"].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
+                }
+                if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy_from_now"].id}`)) {
+                  await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition["energy_from_now"].id}`);
+                  this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition["energy_from_now"].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
                 }
               } else {
                 if (await this.objectExists(`${channelDayId}`)) {

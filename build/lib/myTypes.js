@@ -112,6 +112,10 @@ const stateDefinition = {
   energy_now: {
     id: "energy_now",
     common: { ...commonDef.number, ...{ unit: "kWh" } }
+  },
+  energy_from_now: {
+    id: "energy_from_now",
+    common: { ...commonDef.number, ...{ unit: "kWh" } }
   }
 };
 // Annotate the CommonJS export names for ESM import in node:

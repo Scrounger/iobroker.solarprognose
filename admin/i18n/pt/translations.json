@@ -31,5 +31,6 @@
     "Calculations": "Cálculos",
     "accuracy": "precisão",
     "Data point with energy generated today by PV": "Ponto de dados com energia gerada hoje por energia fotovoltaica",
-    "energy_now": "energia até agora"
+    "energy_now": "energia até agora",
+    "energy_from_now": "energia de agora até o final do dia"
 }

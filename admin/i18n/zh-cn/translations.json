@@ -31,5 +31,6 @@
     "Calculations": "计算",
     "accuracy": "准确性",
     "Data point with energy generated today by PV": "今天光伏发电的数据点",
-    "energy_now": "到现在为止的能量"
+    "energy_now": "到现在为止的能量",
+    "energy_from_now": "从现在到一天结束的能量"
 }

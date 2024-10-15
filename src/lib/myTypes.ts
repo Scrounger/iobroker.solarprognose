@@ -116,4 +116,8 @@ export const stateDefinition: { [key: string]: tStateDefinition; } = {
         id: 'energy_now',
         common: { ...commonDef.number, ... { unit: 'kWh' } }
     },
+    energy_from_now: {
+        id: 'energy_from_now',
+        common: { ...commonDef.number, ... { unit: 'kWh' } }
+    },
 }
