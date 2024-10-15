@@ -12,7 +12,7 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = false;
+	testMode = true;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -123,7 +123,7 @@ class Solarprognose extends utils.Adapter {
 
 						await this.processData(response.data);
 
-						if (this.config.hourlyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
+						if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
 							await this.calcAccuracy();
 						}
 
@@ -183,8 +183,12 @@ class Solarprognose extends utils.Adapter {
 
 								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy'], arr[1], 'energy');
 							}
+
+							if (momentTs.isSame(moment(), 'day') && momentTs.hour() === moment().hour()) {
+								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy_now'], arr[1], 'energy_now');
+							}
 						} else {
-							if (this.config.hourlyEnabled && diffDays <= this.config.dailyMax) {
+							if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
 								if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition['energy'].id}`)) {
 									await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition['energy'].id}`);
 									this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition['energy'].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
@@ -239,7 +243,7 @@ class Solarprognose extends utils.Adapter {
 				await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], 0, 'accuracy');
 				this.log.debug(`${logPrefix} reset accuracy because of new day started`);
 			} else {
-				const idEnergy = `00.${myHelper.zeroPad(moment().hour(), 2)}h.${myTypes.stateDefinition['energy'].id}`
+				const idEnergy = `00.${myTypes.stateDefinition['energy_now'].id}`
 
 				if ((await this.foreignObjectExists(this.config.todayEnergyObject)) && (await this.objectExists(idEnergy))) {
 

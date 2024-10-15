@@ -30,5 +30,6 @@
     "tomorrow": "завтра",
     "Calculations": "Расчеты",
     "accuracy": "точность",
-    "Data point with energy generated today by PV": "Точка данных с энергией, генерируемой сегодня фотоэлектрическими батареями"
+    "Data point with energy generated today by PV": "Точка данных с энергией, генерируемой сегодня фотоэлектрическими батареями",
+    "energy_now": "энергия до сих пор"
 }

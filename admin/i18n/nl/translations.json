@@ -30,5 +30,6 @@
     "tomorrow": "morgen",
     "Calculations": "Berekeningen",
     "accuracy": "nauwkeurigheid",
-    "Data point with energy generated today by PV": "Gegevenspunt met energie die vandaag door PV wordt opgewekt"
+    "Data point with energy generated today by PV": "Gegevenspunt met energie die vandaag door PV wordt opgewekt",
+    "energy_now": "energie tot nu toe"
 }

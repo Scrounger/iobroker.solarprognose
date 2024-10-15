@@ -27,7 +27,7 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = false;
+  testMode = true;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   myTranslation;
@@ -115,7 +115,7 @@ class Solarprognose extends utils.Adapter {
           if (response.status === 0) {
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], response.status, "statusResponse", true);
             await this.processData(response.data);
-            if (this.config.hourlyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
+            if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
               await this.calcAccuracy();
             }
             if (this.updateSchedule)
@@ -163,8 +163,11 @@ class Solarprognose extends utils.Adapter {
                 await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : diffDays === 1 ? this.getTranslation("tomorrow") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
               }
+              if (momentTs.isSame((0, import_moment.default)(), "day") && momentTs.hour() === (0, import_moment.default)().hour()) {
+                await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy_now"], arr[1], "energy_now");
+              }
             } else {
-              if (this.config.hourlyEnabled && diffDays <= this.config.dailyMax) {
+              if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
                 if (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`)) {
                   await this.delObjectAsync(`${channelDayId}.${myTypes.stateDefinition["energy"].id}`);
                   this.log.info(`${logPrefix} deleting state '${channelDayId}.${myTypes.stateDefinition["energy"].id}' (config.dailyEnabled: ${this.config.hourlyEnabled}, config.hourlyEnabled: ${this.config.hourlyEnabled})`);
@@ -211,7 +214,7 @@ class Solarprognose extends utils.Adapter {
         await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], 0, "accuracy");
         this.log.debug(`${logPrefix} reset accuracy because of new day started`);
       } else {
-        const idEnergy = `00.${myHelper.zeroPad((0, import_moment.default)().hour(), 2)}h.${myTypes.stateDefinition["energy"].id}`;
+        const idEnergy = `00.${myTypes.stateDefinition["energy_now"].id}`;
         if (await this.foreignObjectExists(this.config.todayEnergyObject) && await this.objectExists(idEnergy)) {
           const forecastEnergy = await this.getStateAsync(idEnergy);
           const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);

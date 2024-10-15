@@ -30,5 +30,6 @@
     "tomorrow": "Morgen",
     "Calculations": "Berechnungen",
     "accuracy": "Genauigkeit",
-    "Data point with energy generated today by PV": "Datenpunkt mit heute durch PV erzeugter Energie"
+    "Data point with energy generated today by PV": "Datenpunkt mit heute durch PV erzeugter Energie",
+    "energy_now": "Energie bis jetzt"
 }
