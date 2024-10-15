@@ -28,10 +28,12 @@ In the api settings of solarprgnose.de you have to do the following:
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 1.1.0 (2024-10-15)
 
 - (Scrounger) accuracy calculation added
+- (Scrounger) energy now added
+- (Scrounger) energy from now added
+- (Scrounger) bug fixes
 
 ### 1.0.0 (2024-10-08)
 

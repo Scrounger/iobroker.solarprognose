@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "solarprognose",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "news": {
+      "1.1.0": {
+        "en": "accuracy calculation added\nenergy now added\nenergy from now added\nbug fixes",
+        "de": "berechnung der genauigkeit\nenergie jetzt hinzugefügt\nenergie von jetzt an hinzugefügt\nfehlerbehebungen",
+        "ru": "точность расчета добавлен\nэнергия теперь добавлена\nэнергия отныне добавлена\nисправления ошибок",
+        "pt": "cálculo de precisão adicionado\nenergia agora adicionada\nenergia de agora adicionado\ncorreções de bugs",
+        "nl": "nauwkeurigheidsberekening toegevoegd\nnu toegevoegde energie\nvanaf nu toegevoegde energie\nfoutherstel",
+        "fr": "calcul de précision ajouté\nénergie ajoutée\nénergie à partir de maintenant ajoutée\ncorrections des bogues",
+        "it": "calcolo della precisione aggiunto\nenergia ora aggiunto\nenergia da ora aggiunto\ncorrezioni di bug",
+        "es": "cálculo de precisión añadido\nenergía ahora añadida\nenergía a partir de ahora\nbug fixes",
+        "pl": "dodano obliczenia dokładności\nenergia dodana\nenergia od teraz dodana\npoprawki błędów",
+        "uk": "розрахунок точності додано\nдодано енергію\nдодано енергію\nвиправлення помилок",
+        "zh-cn": "添加的精确计算\n现在添加能量\n从现在开始添加能量\n错误修正"
+      },
       "1.0.0": {
         "en": "initial release",
         "de": "erstausstrahlung",
