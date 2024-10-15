@@ -164,18 +164,20 @@ class Solarprognose extends utils.Adapter {
 					const momentTs = moment(timestamp * 1000);
 					const arr = Object.values(data)[i];
 
-					jsonResult.push({
-						human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
-						timestamp: timestamp,
-						val: arr[0],
-						total: arr[1]
-					});
-
 					if (!momentTs.isBefore(moment().startOf('day'))) {
 						// filter out past data
 						const diffDays = momentTs.diff(moment().startOf('day'), 'days');
 						const channelDayId = `${myHelper.zeroPad(diffDays, 2)}`;
 						const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`
+
+						if (diffDays <= this.config.dailyMax) {
+							jsonResult.push({
+								human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
+								timestamp: timestamp,
+								val: arr[0],
+								total: arr[1]
+							});
+						}
 
 						if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
 							if (!Object.keys(data)[i + 1] || (Object.keys(data)[i + 1] && !momentTs.isSame(moment(parseInt(Object.keys(data)[i + 1]) * 1000), 'day'))) {

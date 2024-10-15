@@ -148,16 +148,18 @@ class Solarprognose extends utils.Adapter {
           const timestamp = parseInt(Object.keys(data)[i]);
           const momentTs = (0, import_moment.default)(timestamp * 1e3);
           const arr = Object.values(data)[i];
-          jsonResult.push({
-            human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
-            timestamp,
-            val: arr[0],
-            total: arr[1]
-          });
           if (!momentTs.isBefore((0, import_moment.default)().startOf("day"))) {
             const diffDays = momentTs.diff((0, import_moment.default)().startOf("day"), "days");
             const channelDayId = `${myHelper.zeroPad(diffDays, 2)}`;
             const channelHourId = `${myHelper.zeroPad(momentTs.hours(), 2)}h`;
+            if (diffDays <= this.config.dailyMax) {
+              jsonResult.push({
+                human: momentTs.format(`ddd ${this.dateFormat} HH:mm`),
+                timestamp,
+                val: arr[0],
+                total: arr[1]
+              });
+            }
             if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
               if (!Object.keys(data)[i + 1] || Object.keys(data)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(data)[i + 1]) * 1e3), "day")) {
                 await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : diffDays === 1 ? this.getTranslation("tomorrow") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
