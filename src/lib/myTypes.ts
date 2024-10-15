@@ -13,7 +13,7 @@ export interface preferredNextApiRequestAt {
 
 export interface tStateDefinition {
     id?: string,
-    common?: any,
+    common?: ioBroker.StateCommon,
     ignore?: boolean,
 }
 
@@ -24,8 +24,14 @@ export interface myJsonStructure {
     total: number;
 }
 
-const commonDef = {
+export interface myCommonDefinition {
+    number: ioBroker.StateCommon,
+    string: ioBroker.StateCommon,
+}
+
+const commonDef: myCommonDefinition = {
     number: {
+        name: '',
         type: 'number',
         read: true,
         write: false,
@@ -33,6 +39,7 @@ const commonDef = {
         def: null
     },
     string: {
+        name: '',
         type: 'string',
         read: true,
         write: false,
@@ -85,6 +92,7 @@ export const stateDefinition: { [key: string]: tStateDefinition; } = {
         id: 'json',
         common: {
             name: 'json table',
+            //@ts-ignore
             type: 'json',
             read: true,
             write: false,

@@ -23,6 +23,7 @@ __export(myTypes_exports, {
 module.exports = __toCommonJS(myTypes_exports);
 const commonDef = {
   number: {
+    name: "",
     type: "number",
     read: true,
     write: false,
@@ -30,6 +31,7 @@ const commonDef = {
     def: null
   },
   string: {
+    name: "",
     type: "string",
     read: true,
     write: false,
@@ -82,6 +84,7 @@ const stateDefinition = {
     id: "json",
     common: {
       name: "json table",
+      //@ts-ignore
       type: "json",
       read: true,
       write: false,

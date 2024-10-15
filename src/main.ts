@@ -56,8 +56,8 @@ class Solarprognose extends utils.Adapter {
 
 			callback();
 
-			// eslint-disable-next-line no-unused-vars
-		} catch (e) {
+			// eslint-disable-next-line
+		} catch (e: any) {
 			callback();
 		}
 	}
@@ -138,6 +138,7 @@ class Solarprognose extends utils.Adapter {
 						this.log.info(`${logPrefix} data successfully updated, next update: ${nextUpdateTime.format(`ddd ${this.dateFormat} HH:mm:ss`)}`);
 
 					} else {
+						//@ts-ignore
 						this.log.error(`${logPrefix} data received with error code: ${response.status} - ${myTypes.stateDefinition.statusResponse.common.states[response.status]}`);
 					}
 				} else {
@@ -152,7 +153,7 @@ class Solarprognose extends utils.Adapter {
 		}
 	}
 
-	private async processData(data: { [key: number]: Array<number> } | number) {
+	private async processData(data: { [key: number]: Array<number> } | number): Promise<void> {
 		const logPrefix = '[processData]:';
 
 		try {
@@ -252,7 +253,7 @@ class Solarprognose extends utils.Adapter {
 		}
 	}
 
-	private async calcAccuracy() {
+	private async calcAccuracy(): Promise<void> {
 		const logPrefix = '[calcAccuracy]:';
 
 		try {
@@ -269,8 +270,8 @@ class Solarprognose extends utils.Adapter {
 					const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
 
 					if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
-						// @ts-ignore
-						const res = Math.round(todayEnergy.val / forecastEnergy.val * 100) / 100;
+
+						const res = Math.round((todayEnergy.val as number) / (forecastEnergy.val as number) * 100) / 100;
 
 						this.log.debug(`${logPrefix} new accuracy: ${res} (forecast: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
 
@@ -317,50 +318,52 @@ class Solarprognose extends utils.Adapter {
 		try {
 			const id = `${idChannel}.${stateDef.id}`
 
-			stateDef.common.name = this.getTranslation(key);
+			if (stateDef.common) {
+				stateDef.common.name = this.getTranslation(key);
 
-			if (stateDef.common.unit && Object.prototype.hasOwnProperty.call(this.config, stateDef.common.unit)) {
-				//@ts-ignore
-				stateDef.common.unit = this.getTranslation(this.config[stateDef.common.unit]) || stateDef.common.unit
-			}
+				if (stateDef.common.unit && Object.prototype.hasOwnProperty.call(this.config, stateDef.common.unit)) {
+					//@ts-ignore
+					stateDef.common.unit = this.getTranslation(this.config[stateDef.common.unit]) || stateDef.common.unit
+				}
 
-			if (!await this.objectExists(id)) {
-				this.log.debug(`${logPrefix} creating state '${id}'`);
+				if (!await this.objectExists(id)) {
+					this.log.debug(`${logPrefix} creating state '${id}'`);
 
-				const obj = {
-					type: 'state',
-					common: stateDef.common,
-					native: {}
-				};
+					const obj = {
+						type: 'state',
+						common: stateDef.common,
+						native: {}
+					};
 
-				//@ts-ignore
-				await this.setObjectAsync(id, obj);
-			} else {
-				// update State if needed
-				const obj = await this.getObjectAsync(id);
+					//@ts-ignore
+					await this.setObjectAsync(id, obj);
+				} else {
+					// update State if needed
+					const obj = await this.getObjectAsync(id);
 
 
-				if (obj && obj.common) {
-					if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
-						await this.extendObject(id, { common: stateDef.common });
-						this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
+					if (obj && obj.common) {
+						if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
+							await this.extendObject(id, { common: stateDef.common });
+							this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
+						}
 					}
 				}
-			}
 
-			if (forceUpdate) {
-				await this.setState(id, val, true);
-				this.log.silly(`${logPrefix} value of state '${id}' updated (force: ${forceUpdate})`);
+				if (forceUpdate) {
+					await this.setState(id, val, true);
+					this.log.silly(`${logPrefix} value of state '${id}' updated (force: ${forceUpdate})`);
 
-				return true;
-			} else {
-				let changedObj: any = undefined;
+					return true;
+				} else {
+					let changedObj: any = undefined;
 
-				changedObj = await this.setStateChangedAsync(id, val, true);
+					changedObj = await this.setStateChangedAsync(id, val, true);
 
-				if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, 'notChanged') && !changedObj.notChanged) {
-					this.log.silly(`${logPrefix} value of state '${id}' changed`);
-					return !changedObj.notChanged
+					if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, 'notChanged') && !changedObj.notChanged) {
+						this.log.silly(`${logPrefix} value of state '${id}' changed`);
+						return !changedObj.notChanged
+					}
 				}
 			}
 		} catch (err: any) {
