@@ -12,10 +12,12 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = false;
+	testMode = true;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
+	hourlySchedule: schedule.Job | undefined = undefined;
+	solarData: { [key: number]: Array<number> } | undefined = undefined;
 	myTranslation: { [key: string]: any; } | undefined;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
@@ -42,6 +44,10 @@ class Solarprognose extends utils.Adapter {
 			await this.loadTranslation();
 			await this.updateData();
 
+			if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
+				await this.subscribeForeignStatesAsync(this.config.todayEnergyObject);
+			}
+
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
 		}
@@ -52,7 +58,8 @@ class Solarprognose extends utils.Adapter {
 	 */
 	private onUnload(callback: () => void): void {
 		try {
-			if (this.updateSchedule) this.updateSchedule.cancel()
+			if (this.updateSchedule) this.updateSchedule.cancel();
+			if (this.hourlySchedule) this.hourlySchedule.cancel();
 
 			callback();
 
@@ -80,13 +87,16 @@ class Solarprognose extends utils.Adapter {
 	/**
 	 * Is called if a subscribed state changes
 	 */
-	private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
+	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
 		if (state) {
+			if (id = this.config.todayEnergyObject) {
+				await this.calcAccuracy();
+			}
 			// The state was changed
-			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+			// this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 		} else {
 			// The state was deleted
-			this.log.info(`state ${id} deleted`);
+			// this.log.info(`state ${id} deleted`);
 		}
 	}
 
@@ -120,8 +130,9 @@ class Solarprognose extends utils.Adapter {
 				if (response) {
 					if (response.status === 0) {
 						await this.createOrUpdateState(this.namespace, myTypes.stateDefinition['statusResponse'], response.status, 'statusResponse', true);
+						this.solarData = response.data;
 
-						await this.processData(response.data);
+						await this.processData();
 
 						if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
 							await this.calcAccuracy();
@@ -153,17 +164,17 @@ class Solarprognose extends utils.Adapter {
 		}
 	}
 
-	private async processData(data: { [key: number]: Array<number> } | number): Promise<void> {
+	private async processData(): Promise<void> {
 		const logPrefix = '[processData]:';
 
 		try {
-			if (data) {
+			if (this.solarData) {
 				const jsonResult: Array<myTypes.myJsonStructure> = [];
 
-				for (let i = 0; i <= Object.keys(data).length - 1; i++) {
-					const timestamp = parseInt(Object.keys(data)[i]);
+				for (let i = 0; i <= Object.keys(this.solarData).length - 1; i++) {
+					const timestamp = parseInt(Object.keys(this.solarData)[i]);
 					const momentTs = moment(timestamp * 1000);
-					const arr = Object.values(data)[i];
+					const arr = Object.values(this.solarData)[i];
 
 					if (!momentTs.isBefore(moment().startOf('day'))) {
 						// filter out past data
@@ -181,7 +192,7 @@ class Solarprognose extends utils.Adapter {
 						}
 
 						if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
-							if (!Object.keys(data)[i + 1] || (Object.keys(data)[i + 1] && !momentTs.isSame(moment(parseInt(Object.keys(data)[i + 1]) * 1000), 'day'))) {
+							if (!Object.keys(this.solarData)[i + 1] || (Object.keys(this.solarData)[i + 1] && !momentTs.isSame(moment(parseInt(Object.keys(this.solarData)[i + 1]) * 1000), 'day'))) {
 								await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation('today') : diffDays === 1 ? this.getTranslation('tomorrow') : this.getTranslation('inXDays').replace('{0}', diffDays.toString()));
 
 								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy'], arr[1], 'energy');
@@ -345,7 +356,7 @@ class Solarprognose extends utils.Adapter {
 					if (obj && obj.common) {
 						if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
 							await this.extendObject(id, { common: stateDef.common });
-							this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
+							this.log.info(`${logPrefix} updated common properties of state '${id}'`);
 						}
 					}
 				}
@@ -395,7 +406,7 @@ class Solarprognose extends utils.Adapter {
 				if (obj && obj.common) {
 					if (JSON.stringify(obj.common) !== JSON.stringify(common)) {
 						await this.extendObject(id, { common: common });
-						this.log.debug(`${logPrefix} channel updated '${id}'`);
+						this.log.info(`${logPrefix} channel updated '${id}'`);
 					}
 				}
 			}

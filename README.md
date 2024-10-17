@@ -28,6 +28,11 @@ In the api settings of solarprgnose.de you have to do the following:
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+
+- (Scrounger) calc accuracy on state changed
+
 ### 1.1.0 (2024-10-15)
 
 - (Scrounger) accuracy calculation added

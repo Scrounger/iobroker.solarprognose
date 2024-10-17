@@ -27,9 +27,11 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = false;
+  testMode = true;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
+  hourlySchedule = void 0;
+  solarData = void 0;
   myTranslation;
   constructor(options = {}) {
     super({
@@ -49,6 +51,9 @@ class Solarprognose extends utils.Adapter {
     try {
       await this.loadTranslation();
       await this.updateData();
+      if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
+        await this.subscribeForeignStatesAsync(this.config.todayEnergyObject);
+      }
     } catch (error) {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
@@ -60,6 +65,8 @@ class Solarprognose extends utils.Adapter {
     try {
       if (this.updateSchedule)
         this.updateSchedule.cancel();
+      if (this.hourlySchedule)
+        this.hourlySchedule.cancel();
       callback();
     } catch (e) {
       callback();
@@ -82,11 +89,12 @@ class Solarprognose extends utils.Adapter {
   /**
    * Is called if a subscribed state changes
    */
-  onStateChange(id, state) {
+  async onStateChange(id, state) {
     if (state) {
-      this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+      if (id = this.config.todayEnergyObject) {
+        await this.calcAccuracy();
+      }
     } else {
-      this.log.info(`state ${id} deleted`);
     }
   }
   // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
@@ -114,7 +122,8 @@ class Solarprognose extends utils.Adapter {
         if (response) {
           if (response.status === 0) {
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], response.status, "statusResponse", true);
-            await this.processData(response.data);
+            this.solarData = response.data;
+            await this.processData();
             if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
               await this.calcAccuracy();
             }
@@ -139,15 +148,15 @@ class Solarprognose extends utils.Adapter {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
   }
-  async processData(data) {
+  async processData() {
     const logPrefix = "[processData]:";
     try {
-      if (data) {
+      if (this.solarData) {
         const jsonResult = [];
-        for (let i = 0; i <= Object.keys(data).length - 1; i++) {
-          const timestamp = parseInt(Object.keys(data)[i]);
+        for (let i = 0; i <= Object.keys(this.solarData).length - 1; i++) {
+          const timestamp = parseInt(Object.keys(this.solarData)[i]);
           const momentTs = (0, import_moment.default)(timestamp * 1e3);
-          const arr = Object.values(data)[i];
+          const arr = Object.values(this.solarData)[i];
           if (!momentTs.isBefore((0, import_moment.default)().startOf("day"))) {
             const diffDays = momentTs.diff((0, import_moment.default)().startOf("day"), "days");
             const channelDayId = `${myHelper.zeroPad(diffDays, 2)}`;
@@ -161,7 +170,7 @@ class Solarprognose extends utils.Adapter {
               });
             }
             if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
-              if (!Object.keys(data)[i + 1] || Object.keys(data)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(data)[i + 1]) * 1e3), "day")) {
+              if (!Object.keys(this.solarData)[i + 1] || Object.keys(this.solarData)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(this.solarData)[i + 1]) * 1e3), "day")) {
                 await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : diffDays === 1 ? this.getTranslation("tomorrow") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
                 if (momentTs.isSame((0, import_moment.default)(), "day") && await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`)) {
@@ -288,7 +297,7 @@ class Solarprognose extends utils.Adapter {
           if (obj && obj.common) {
             if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
               await this.extendObject(id, { common: stateDef.common });
-              this.log.debug(`${logPrefix} updated common properties of state '${id}'`);
+              this.log.info(`${logPrefix} updated common properties of state '${id}'`);
             }
           }
         }
@@ -329,7 +338,7 @@ class Solarprognose extends utils.Adapter {
         if (obj && obj.common) {
           if (JSON.stringify(obj.common) !== JSON.stringify(common)) {
             await this.extendObject(id, { common });
-            this.log.debug(`${logPrefix} channel updated '${id}'`);
+            this.log.info(`${logPrefix} channel updated '${id}'`);
           }
         }
       }
