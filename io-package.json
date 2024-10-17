@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "solarprognose",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "news": {
+      "1.2.0": {
+        "en": "calc accuracy on state changed\nupdate energy now and energy from now every hour\noptional interpolate daily energy values (energy now and energy from now)",
+        "de": "kalkgenauigkeit auf zustand geändert\nenergie jetzt und energie ab sofort jede stunde aktualisieren\noptional interpolieren tagesenergiewerte (energie jetzt und energie ab sofort)",
+        "ru": "точность расчета на состояние изменен\nобновлять энергию сейчас и энергию отныне каждый час\nнеобязательная интерполяция ежедневных энергетических ценностей (энергия сейчас и энергия отныне)",
+        "pt": "precisão de calcário no estado alterado\natualizar energia agora e energia a partir de agora a cada hora\nvalores de energia diária interpolar opcional (energia agora e energia a partir de agora)",
+        "nl": "calc nauwkeurigheid bij status gewijzigd\nupdate energie nu en energie vanaf nu elk uur\noptionele interpoleer dagelijkse energiewaarden (energie nu en energie vanaf nu)",
+        "fr": "précision calc sur l'état modifié\nmettre à jour l'énergie dès maintenant et l'énergie dès maintenant toutes les heures\ninterpolez en option les valeurs d'énergie journalières (énergie maintenant et énergie à partir de maintenant)",
+        "it": "accuratezza del calcolo su stato cambiato\naggiornare l'energia ora e l'energia da ora ogni ora\nopzionale interpolare i valori energetici giornalieri (energia e energia da ora)",
+        "es": "precisión de calc en estado cambiado\nactualizar la energía ahora y la energía desde ahora cada hora\nopcional interpolar los valores de energía diaria (energía ahora y energía a partir de ahora)",
+        "pl": "dokładność calc na zmianie stanu\naktualizacja energii teraz i energii od teraz co godzinę\nopcjonalne interpolacja dziennych wartości energii (energia teraz i energia od teraz)",
+        "uk": "точність кальцій на зміні стану\nоновлюється енергія зараз і енергія від зараз\nнеобов'язкові міжполярні добові значення енергії (енергія зараз і енергія)",
+        "zh-cn": "状态的计算精度已更改\n随时更新能量和能量\n可选的每日能量值(现在的能量和现在的能量)"
+      },
       "1.1.0": {
         "en": "accuracy calculation added\nenergy now added\nenergy from now added\nbug fixes",
         "de": "berechnung der genauigkeit\nenergie jetzt hinzugefügt\nenergie von jetzt an hinzugefügt\nfehlerbehebungen",

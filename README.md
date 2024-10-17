@@ -28,8 +28,7 @@ In the api settings of solarprgnose.de you have to do the following:
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 1.2.0 (2024-10-17)
 
 - (Scrounger) calc accuracy on state changed
 - (Scrounger) update energy now and energy from now every hour
