@@ -27,7 +27,7 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = true;
+  testMode = false;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   hourlySchedule = void 0;
@@ -54,6 +54,9 @@ class Solarprognose extends utils.Adapter {
       if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
         await this.subscribeForeignStatesAsync(this.config.todayEnergyObject);
       }
+      this.hourlySchedule = schedule.scheduleJob("0 * * * *", async () => {
+        this.hourlyUpdate();
+      });
     } catch (error) {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
@@ -247,6 +250,27 @@ class Solarprognose extends utils.Adapter {
             const res = Math.round(todayEnergy.val / forecastEnergy.val * 100) / 100;
             this.log.debug(`${logPrefix} new accuracy: ${res} (forecast: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
             await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], res, "accuracy");
+          }
+        }
+      }
+    } catch (error) {
+      this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
+  }
+  async hourlyUpdate() {
+    const logPrefix = "[hourlyUpdate]:";
+    const nowTs = (0, import_moment.default)().startOf("hour").unix();
+    try {
+      if (this.solarData && this.solarData[nowTs]) {
+        const nowData = this.solarData[nowTs];
+        this.log.debug(`${logPrefix} now data: ${JSON.stringify(nowData)}`);
+        if (await this.objectExists(`00.${myTypes.stateDefinition["energy_now"].id}`)) {
+          await this.createOrUpdateState("00", myTypes.stateDefinition["energy_now"], nowData[1], "energy_now");
+          if (await this.objectExists(`00.${myTypes.stateDefinition["energy"].id}`) && await this.objectExists(`00.${myTypes.stateDefinition["energy_from_now"].id}`)) {
+            const energyOfDay = await this.getStateAsync(`00.${myTypes.stateDefinition["energy"].id}`);
+            if (energyOfDay) {
+              await this.createOrUpdateState("00", myTypes.stateDefinition["energy_from_now"], energyOfDay.val - nowData[1], "energy_from_now");
+            }
           }
         }
       }

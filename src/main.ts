@@ -12,7 +12,7 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = true;
+	testMode = false;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
@@ -47,6 +47,10 @@ class Solarprognose extends utils.Adapter {
 			if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
 				await this.subscribeForeignStatesAsync(this.config.todayEnergyObject);
 			}
+
+			this.hourlySchedule = schedule.scheduleJob('0 * * * *', async () => {
+				this.hourlyUpdate();
+			});
 
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -291,6 +295,33 @@ class Solarprognose extends utils.Adapter {
 				}
 			}
 
+		} catch (error: any) {
+			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+		}
+	}
+
+	private async hourlyUpdate() {
+		const logPrefix = '[hourlyUpdate]:';
+		const nowTs = moment().startOf('hour').unix();
+
+		try {
+			if (this.solarData && this.solarData[nowTs]) {
+				const nowData = this.solarData[nowTs];
+
+				this.log.debug(`${logPrefix} now data: ${JSON.stringify(nowData)}`);
+
+				if (await this.objectExists(`00.${myTypes.stateDefinition['energy_now'].id}`)) {
+					await this.createOrUpdateState('00', myTypes.stateDefinition['energy_now'], nowData[1], 'energy_now');
+
+					if (await this.objectExists(`00.${myTypes.stateDefinition['energy'].id}`) && await this.objectExists(`00.${myTypes.stateDefinition['energy_from_now'].id}`)) {
+						const energyOfDay = await this.getStateAsync(`00.${myTypes.stateDefinition['energy'].id}`);
+
+						if (energyOfDay) {
+							await this.createOrUpdateState('00', myTypes.stateDefinition['energy_from_now'], (energyOfDay.val as number) - nowData[1], 'energy_from_now');
+						}
+					}
+				}
+			}
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
 		}

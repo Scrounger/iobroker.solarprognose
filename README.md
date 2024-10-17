@@ -32,6 +32,7 @@ In the api settings of solarprgnose.de you have to do the following:
 ### **WORK IN PROGRESS**
 
 - (Scrounger) calc accuracy on state changed
+- (Scrounger) update energy now and energy from now every hour
 
 ### 1.1.0 (2024-10-15)
 
