@@ -124,7 +124,8 @@
     "dailyEnabled": true,
     "dailyMax": 4,
     "accuracyEnabled": false,
-    "todayEnergyObject": ""
+    "todayEnergyObject": "",
+    "dailyInterpolation": true
   },
   "objects": [],
   "instanceObjects": []

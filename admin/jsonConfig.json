@@ -125,6 +125,13 @@
 			"sm": 12,
 			"md": 1
 		},
+		"dailyInterpolation": {
+			"type": "checkbox",
+			"label": "dailyInterpolation",
+			"sm": 12,
+			"md": 3,
+			"disabled": "!data.dailyEnabled"
+		},
 		"dividerCalculations": {
 			"newLine": true,
 			"type": "header",

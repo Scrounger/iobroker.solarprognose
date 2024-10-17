@@ -12,11 +12,12 @@ import * as myTypes from './lib/myTypes';
 import * as myHelper from './lib/helper';
 
 class Solarprognose extends utils.Adapter {
-	testMode = false;
+	testMode = true;
 
 	apiEndpoint = 'https://www.solarprognose.de/web/solarprediction/api/v1';
 	updateSchedule: schedule.Job | undefined = undefined;
 	hourlySchedule: schedule.Job | undefined = undefined;
+	interpolationSchedule: schedule.Job | undefined = undefined;
 	solarData: { [key: number]: Array<number> } | undefined = undefined;
 	myTranslation: { [key: string]: any; } | undefined;
 
@@ -49,8 +50,16 @@ class Solarprognose extends utils.Adapter {
 			}
 
 			this.hourlySchedule = schedule.scheduleJob('0 * * * *', async () => {
-				this.hourlyUpdate();
+				this.updateCalcedEnergy();
+				this.calcAccuracy();
 			});
+
+			if (this.config.dailyInterpolation) {
+				this.interpolationSchedule = schedule.scheduleJob('*/5 * * * *', async () => {
+					this.updateCalcedEnergy();
+					this.calcAccuracy();
+				});
+			}
 
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -64,6 +73,7 @@ class Solarprognose extends utils.Adapter {
 		try {
 			if (this.updateSchedule) this.updateSchedule.cancel();
 			if (this.hourlySchedule) this.hourlySchedule.cancel();
+			if (this.interpolationSchedule) this.interpolationSchedule.cancel();
 
 			callback();
 
@@ -94,7 +104,8 @@ class Solarprognose extends utils.Adapter {
 	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
 		if (state) {
 			if (id = this.config.todayEnergyObject) {
-				await this.calcAccuracy();
+				this.updateCalcedEnergy();
+				this.calcAccuracy();
 			}
 			// The state was changed
 			// this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
@@ -137,10 +148,8 @@ class Solarprognose extends utils.Adapter {
 						this.solarData = response.data;
 
 						await this.processData();
-
-						if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
-							await this.calcAccuracy();
-						}
+						await this.updateCalcedEnergy();
+						await this.calcAccuracy();
 
 						if (this.updateSchedule) this.updateSchedule.cancel()
 						const nextUpdateTime = this.getNextUpdateTime(response.preferredNextApiRequestAt);
@@ -200,18 +209,6 @@ class Solarprognose extends utils.Adapter {
 								await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation('today') : diffDays === 1 ? this.getTranslation('tomorrow') : this.getTranslation('inXDays').replace('{0}', diffDays.toString()));
 
 								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy'], arr[1], 'energy');
-
-								if (momentTs.isSame(moment(), 'day') && (await this.objectExists(`${channelDayId}.${myTypes.stateDefinition['energy_now'].id}`))) {
-									const energyNow = await this.getStateAsync(`${channelDayId}.${myTypes.stateDefinition['energy_now'].id}`);
-
-									if (energyNow && (energyNow.val || energyNow?.val === 0)) {
-										await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy_from_now'], arr[1] - (energyNow.val as number), 'energy_from_now');
-									}
-								}
-							}
-
-							if (momentTs.isSame(moment(), 'day') && momentTs.hour() === moment().hour()) {
-								await this.createOrUpdateState(channelDayId, myTypes.stateDefinition['energy_now'], arr[1], 'energy_now');
 							}
 						} else {
 							if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
@@ -268,56 +265,62 @@ class Solarprognose extends utils.Adapter {
 		}
 	}
 
-	private async calcAccuracy(): Promise<void> {
-		const logPrefix = '[calcAccuracy]:';
+	private async updateCalcedEnergy(): Promise<void> {
+		const logPrefix = '[updateCalcedEnergy]:';
 
 		try {
-			if (moment().hour() === 0) {
-				// reset at day change
-				await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], 0, 'accuracy');
-				this.log.debug(`${logPrefix} reset accuracy because of new day started`);
-			} else {
-				const idEnergy = `00.${myTypes.stateDefinition['energy_now'].id}`
+			if (this.config.dailyEnabled) {
+				const nowTs = moment().startOf('hour').unix();
+				const nextHourTs = moment().startOf('hour').add(1, 'hour').unix();
 
-				if ((await this.foreignObjectExists(this.config.todayEnergyObject)) && (await this.objectExists(idEnergy))) {
+				const idEnergy = `00.${myTypes.stateDefinition['energy'].id}`
 
-					const forecastEnergy = await this.getStateAsync(idEnergy);
-					const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
+				if (this.solarData && this.solarData[nowTs] && (await this.objectExists(idEnergy))) {
+					const energyTotalToday = await this.getStateAsync(idEnergy);
 
-					if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
+					if (energyTotalToday && (energyTotalToday.val || energyTotalToday.val === 0)) {
+						let energyNow = this.solarData[nowTs][1];
 
-						const res = Math.round((todayEnergy.val as number) / (forecastEnergy.val as number) * 100) / 100;
+						if (this.config.dailyInterpolation && this.solarData[nextHourTs]) {
+							energyNow = Math.round((this.solarData[nowTs][1] + (this.solarData[nextHourTs][1] - this.solarData[nowTs][1]) / 60 * moment().minutes()) * 1000) / 1000;
+							this.log.debug(`${logPrefix} update energy_now with interpolation: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]}, energy next: ${this.solarData[nextHourTs][1]}, minutes: ${moment().minutes()}))`)
+						} else {
+							this.log.debug(`${logPrefix} update energy_now: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]})`);
+						}
 
-						this.log.debug(`${logPrefix} new accuracy: ${res} (forecast: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
-
-						await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], res, 'accuracy');
+						await this.createOrUpdateState('00', myTypes.stateDefinition['energy_now'], energyNow, 'energy_now');
+						await this.createOrUpdateState('00', myTypes.stateDefinition['energy_from_now'], Math.round(((energyTotalToday.val as number) - energyNow) * 1000) / 1000, 'energy_from_now');
 					}
 				}
 			}
-
 		} catch (error: any) {
 			this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
 		}
 	}
 
-	private async hourlyUpdate() {
-		const logPrefix = '[hourlyUpdate]:';
-		const nowTs = moment().startOf('hour').unix();
+	private async calcAccuracy(): Promise<void> {
+		const logPrefix = '[calcAccuracy]:';
 
 		try {
-			if (this.solarData && this.solarData[nowTs]) {
-				const nowData = this.solarData[nowTs];
+			if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && (await this.foreignObjectExists(this.config.todayEnergyObject))) {
+				if (moment().hour() === 0) {
+					// reset at day change
+					await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], 0, 'accuracy');
+					this.log.debug(`${logPrefix} reset accuracy because of new day started`);
+				} else {
+					const idEnergy = `00.${myTypes.stateDefinition['energy_now'].id}`
 
-				this.log.debug(`${logPrefix} now data: ${JSON.stringify(nowData)}`);
+					if ((await this.foreignObjectExists(this.config.todayEnergyObject)) && (await this.objectExists(idEnergy))) {
 
-				if (await this.objectExists(`00.${myTypes.stateDefinition['energy_now'].id}`)) {
-					await this.createOrUpdateState('00', myTypes.stateDefinition['energy_now'], nowData[1], 'energy_now');
+						const forecastEnergy = await this.getStateAsync(idEnergy);
+						const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
 
-					if (await this.objectExists(`00.${myTypes.stateDefinition['energy'].id}`) && await this.objectExists(`00.${myTypes.stateDefinition['energy_from_now'].id}`)) {
-						const energyOfDay = await this.getStateAsync(`00.${myTypes.stateDefinition['energy'].id}`);
+						if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
+							const res = Math.round((todayEnergy.val as number) / (forecastEnergy.val as number) * 100) / 100;
 
-						if (energyOfDay) {
-							await this.createOrUpdateState('00', myTypes.stateDefinition['energy_from_now'], (energyOfDay.val as number) - nowData[1], 'energy_from_now');
+							this.log.debug(`${logPrefix} new accuracy: ${res} (energy now: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
+
+							await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition['accuracy'], res, 'accuracy');
 						}
 					}
 				}
@@ -394,7 +397,7 @@ class Solarprognose extends utils.Adapter {
 
 				if (forceUpdate) {
 					await this.setState(id, val, true);
-					this.log.silly(`${logPrefix} value of state '${id}' updated (force: ${forceUpdate})`);
+					this.log.silly(`${logPrefix} value of state '${id}' updated to ${val} (force: ${forceUpdate})`);
 
 					return true;
 				} else {
@@ -403,7 +406,7 @@ class Solarprognose extends utils.Adapter {
 					changedObj = await this.setStateChangedAsync(id, val, true);
 
 					if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, 'notChanged') && !changedObj.notChanged) {
-						this.log.silly(`${logPrefix} value of state '${id}' changed`);
+						this.log.silly(`${logPrefix} value of state '${id}' changed to ${val}`);
 						return !changedObj.notChanged
 					}
 				}

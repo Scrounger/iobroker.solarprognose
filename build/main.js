@@ -27,10 +27,11 @@ var schedule = __toESM(require("node-schedule"));
 var myTypes = __toESM(require("./lib/myTypes"));
 var myHelper = __toESM(require("./lib/helper"));
 class Solarprognose extends utils.Adapter {
-  testMode = false;
+  testMode = true;
   apiEndpoint = "https://www.solarprognose.de/web/solarprediction/api/v1";
   updateSchedule = void 0;
   hourlySchedule = void 0;
+  interpolationSchedule = void 0;
   solarData = void 0;
   myTranslation;
   constructor(options = {}) {
@@ -55,8 +56,15 @@ class Solarprognose extends utils.Adapter {
         await this.subscribeForeignStatesAsync(this.config.todayEnergyObject);
       }
       this.hourlySchedule = schedule.scheduleJob("0 * * * *", async () => {
-        this.hourlyUpdate();
+        this.updateCalcedEnergy();
+        this.calcAccuracy();
       });
+      if (this.config.dailyInterpolation) {
+        this.interpolationSchedule = schedule.scheduleJob("*/5 * * * *", async () => {
+          this.updateCalcedEnergy();
+          this.calcAccuracy();
+        });
+      }
     } catch (error) {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
@@ -70,6 +78,8 @@ class Solarprognose extends utils.Adapter {
         this.updateSchedule.cancel();
       if (this.hourlySchedule)
         this.hourlySchedule.cancel();
+      if (this.interpolationSchedule)
+        this.interpolationSchedule.cancel();
       callback();
     } catch (e) {
       callback();
@@ -95,7 +105,8 @@ class Solarprognose extends utils.Adapter {
   async onStateChange(id, state) {
     if (state) {
       if (id = this.config.todayEnergyObject) {
-        await this.calcAccuracy();
+        this.updateCalcedEnergy();
+        this.calcAccuracy();
       }
     } else {
     }
@@ -127,9 +138,8 @@ class Solarprognose extends utils.Adapter {
             await this.createOrUpdateState(this.namespace, myTypes.stateDefinition["statusResponse"], response.status, "statusResponse", true);
             this.solarData = response.data;
             await this.processData();
-            if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
-              await this.calcAccuracy();
-            }
+            await this.updateCalcedEnergy();
+            await this.calcAccuracy();
             if (this.updateSchedule)
               this.updateSchedule.cancel();
             const nextUpdateTime = this.getNextUpdateTime(response.preferredNextApiRequestAt);
@@ -176,15 +186,6 @@ class Solarprognose extends utils.Adapter {
               if (!Object.keys(this.solarData)[i + 1] || Object.keys(this.solarData)[i + 1] && !momentTs.isSame((0, import_moment.default)(parseInt(Object.keys(this.solarData)[i + 1]) * 1e3), "day")) {
                 await this.createOrUpdateChannel(channelDayId, diffDays === 0 ? this.getTranslation("today") : diffDays === 1 ? this.getTranslation("tomorrow") : this.getTranslation("inXDays").replace("{0}", diffDays.toString()));
                 await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy"], arr[1], "energy");
-                if (momentTs.isSame((0, import_moment.default)(), "day") && await this.objectExists(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`)) {
-                  const energyNow = await this.getStateAsync(`${channelDayId}.${myTypes.stateDefinition["energy_now"].id}`);
-                  if (energyNow && (energyNow.val || (energyNow == null ? void 0 : energyNow.val) === 0)) {
-                    await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy_from_now"], arr[1] - energyNow.val, "energy_from_now");
-                  }
-                }
-              }
-              if (momentTs.isSame((0, import_moment.default)(), "day") && momentTs.hour() === (0, import_moment.default)().hour()) {
-                await this.createOrUpdateState(channelDayId, myTypes.stateDefinition["energy_now"], arr[1], "energy_now");
               }
             } else {
               if (this.config.dailyEnabled && diffDays <= this.config.dailyMax) {
@@ -235,21 +236,25 @@ class Solarprognose extends utils.Adapter {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
   }
-  async calcAccuracy() {
-    const logPrefix = "[calcAccuracy]:";
+  async updateCalcedEnergy() {
+    const logPrefix = "[updateCalcedEnergy]:";
     try {
-      if ((0, import_moment.default)().hour() === 0) {
-        await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], 0, "accuracy");
-        this.log.debug(`${logPrefix} reset accuracy because of new day started`);
-      } else {
-        const idEnergy = `00.${myTypes.stateDefinition["energy_now"].id}`;
-        if (await this.foreignObjectExists(this.config.todayEnergyObject) && await this.objectExists(idEnergy)) {
-          const forecastEnergy = await this.getStateAsync(idEnergy);
-          const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
-          if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
-            const res = Math.round(todayEnergy.val / forecastEnergy.val * 100) / 100;
-            this.log.debug(`${logPrefix} new accuracy: ${res} (forecast: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
-            await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], res, "accuracy");
+      if (this.config.dailyEnabled) {
+        const nowTs = (0, import_moment.default)().startOf("hour").unix();
+        const nextHourTs = (0, import_moment.default)().startOf("hour").add(1, "hour").unix();
+        const idEnergy = `00.${myTypes.stateDefinition["energy"].id}`;
+        if (this.solarData && this.solarData[nowTs] && await this.objectExists(idEnergy)) {
+          const energyTotalToday = await this.getStateAsync(idEnergy);
+          if (energyTotalToday && (energyTotalToday.val || energyTotalToday.val === 0)) {
+            let energyNow = this.solarData[nowTs][1];
+            if (this.config.dailyInterpolation && this.solarData[nextHourTs]) {
+              energyNow = Math.round((this.solarData[nowTs][1] + (this.solarData[nextHourTs][1] - this.solarData[nowTs][1]) / 60 * (0, import_moment.default)().minutes()) * 1e3) / 1e3;
+              this.log.debug(`${logPrefix} update energy_now with interpolation: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]}, energy next: ${this.solarData[nextHourTs][1]}, minutes: ${(0, import_moment.default)().minutes()}))`);
+            } else {
+              this.log.debug(`${logPrefix} update energy_now: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]})`);
+            }
+            await this.createOrUpdateState("00", myTypes.stateDefinition["energy_now"], energyNow, "energy_now");
+            await this.createOrUpdateState("00", myTypes.stateDefinition["energy_from_now"], Math.round((energyTotalToday.val - energyNow) * 1e3) / 1e3, "energy_from_now");
           }
         }
       }
@@ -257,19 +262,22 @@ class Solarprognose extends utils.Adapter {
       this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
   }
-  async hourlyUpdate() {
-    const logPrefix = "[hourlyUpdate]:";
-    const nowTs = (0, import_moment.default)().startOf("hour").unix();
+  async calcAccuracy() {
+    const logPrefix = "[calcAccuracy]:";
     try {
-      if (this.solarData && this.solarData[nowTs]) {
-        const nowData = this.solarData[nowTs];
-        this.log.debug(`${logPrefix} now data: ${JSON.stringify(nowData)}`);
-        if (await this.objectExists(`00.${myTypes.stateDefinition["energy_now"].id}`)) {
-          await this.createOrUpdateState("00", myTypes.stateDefinition["energy_now"], nowData[1], "energy_now");
-          if (await this.objectExists(`00.${myTypes.stateDefinition["energy"].id}`) && await this.objectExists(`00.${myTypes.stateDefinition["energy_from_now"].id}`)) {
-            const energyOfDay = await this.getStateAsync(`00.${myTypes.stateDefinition["energy"].id}`);
-            if (energyOfDay) {
-              await this.createOrUpdateState("00", myTypes.stateDefinition["energy_from_now"], energyOfDay.val - nowData[1], "energy_from_now");
+      if (this.config.dailyEnabled && this.config.accuracyEnabled && this.config.todayEnergyObject && await this.foreignObjectExists(this.config.todayEnergyObject)) {
+        if ((0, import_moment.default)().hour() === 0) {
+          await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], 0, "accuracy");
+          this.log.debug(`${logPrefix} reset accuracy because of new day started`);
+        } else {
+          const idEnergy = `00.${myTypes.stateDefinition["energy_now"].id}`;
+          if (await this.foreignObjectExists(this.config.todayEnergyObject) && await this.objectExists(idEnergy)) {
+            const forecastEnergy = await this.getStateAsync(idEnergy);
+            const todayEnergy = await this.getForeignStateAsync(this.config.todayEnergyObject);
+            if (forecastEnergy && forecastEnergy.val && todayEnergy && (todayEnergy.val || todayEnergy.val === 0)) {
+              const res = Math.round(todayEnergy.val / forecastEnergy.val * 100) / 100;
+              this.log.debug(`${logPrefix} new accuracy: ${res} (energy now: ${forecastEnergy.val}, energyToday: ${todayEnergy.val}) `);
+              await this.createOrUpdateState(`${this.namespace}.00`, myTypes.stateDefinition["accuracy"], res, "accuracy");
             }
           }
         }
@@ -327,13 +335,13 @@ class Solarprognose extends utils.Adapter {
         }
         if (forceUpdate) {
           await this.setState(id, val, true);
-          this.log.silly(`${logPrefix} value of state '${id}' updated (force: ${forceUpdate})`);
+          this.log.silly(`${logPrefix} value of state '${id}' updated to ${val} (force: ${forceUpdate})`);
           return true;
         } else {
           let changedObj = void 0;
           changedObj = await this.setStateChangedAsync(id, val, true);
           if (changedObj && Object.prototype.hasOwnProperty.call(changedObj, "notChanged") && !changedObj.notChanged) {
-            this.log.silly(`${logPrefix} value of state '${id}' changed`);
+            this.log.silly(`${logPrefix} value of state '${id}' changed to ${val}`);
             return !changedObj.notChanged;
           }
         }

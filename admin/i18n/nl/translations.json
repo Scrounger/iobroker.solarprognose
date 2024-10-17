@@ -32,5 +32,6 @@
     "accuracy": "nauwkeurigheid",
     "Data point with energy generated today by PV": "Gegevenspunt met energie die vandaag door PV wordt opgewekt",
     "energy_now": "energie tot nu toe",
-    "energy_from_now": "energie van nu tot het einde van de dag"
+    "energy_from_now": "energie van nu tot het einde van de dag",
+    "dailyInterpolation": "Interpoleer de waarden van vandaag"
 }

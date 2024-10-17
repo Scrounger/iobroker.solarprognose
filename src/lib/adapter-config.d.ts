@@ -15,6 +15,7 @@ declare global {
 			dailyMax: number;
 			accuracyEnabled: number;
 			todayEnergyObject: string;
+			dailyInterpolation: boolean;
 		}
 	}
 }

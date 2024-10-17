@@ -33,6 +33,7 @@ In the api settings of solarprgnose.de you have to do the following:
 
 - (Scrounger) calc accuracy on state changed
 - (Scrounger) update energy now and energy from now every hour
+- (Scrounger) optional interpolate daily energy values (energy now and energy from now)
 
 ### 1.1.0 (2024-10-15)
 
