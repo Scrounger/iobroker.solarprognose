@@ -243,18 +243,23 @@ class Solarprognose extends utils.Adapter {
         const nowTs = (0, import_moment.default)().startOf("hour").unix();
         const nextHourTs = (0, import_moment.default)().startOf("hour").add(1, "hour").unix();
         const idEnergy = `00.${myTypes.stateDefinition["energy"].id}`;
-        if (this.solarData && this.solarData[nowTs] && await this.objectExists(idEnergy)) {
+        if (await this.objectExists(idEnergy)) {
           const energyTotalToday = await this.getStateAsync(idEnergy);
-          if (energyTotalToday && (energyTotalToday.val || energyTotalToday.val === 0)) {
-            let energyNow = this.solarData[nowTs][1];
-            if (this.config.dailyInterpolation && this.solarData[nextHourTs]) {
-              energyNow = Math.round((this.solarData[nowTs][1] + (this.solarData[nextHourTs][1] - this.solarData[nowTs][1]) / 60 * (0, import_moment.default)().minutes()) * 1e3) / 1e3;
-              this.log.debug(`${logPrefix} update energy_now with interpolation: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]}, energy next: ${this.solarData[nextHourTs][1]}, minutes: ${(0, import_moment.default)().minutes()}))`);
-            } else {
-              this.log.debug(`${logPrefix} update energy_now: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]})`);
+          if (this.solarData && this.solarData[nowTs]) {
+            if (energyTotalToday && (energyTotalToday.val || energyTotalToday.val === 0)) {
+              let energyNow = this.solarData[nowTs][1];
+              if (this.config.dailyInterpolation && this.solarData[nextHourTs]) {
+                energyNow = Math.round((this.solarData[nowTs][1] + (this.solarData[nextHourTs][1] - this.solarData[nowTs][1]) / 60 * (0, import_moment.default)().minutes()) * 1e3) / 1e3;
+                this.log.debug(`${logPrefix} update energy_now with interpolation: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]}, energy next: ${this.solarData[nextHourTs][1]}, minutes: ${(0, import_moment.default)().minutes()}))`);
+              } else {
+                this.log.debug(`${logPrefix} update energy_now: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]})`);
+              }
+              await this.createOrUpdateState("00", myTypes.stateDefinition["energy_now"], energyNow, "energy_now");
+              await this.createOrUpdateState("00", myTypes.stateDefinition["energy_from_now"], Math.round((energyTotalToday.val - energyNow) * 1e3) / 1e3, "energy_from_now");
             }
-            await this.createOrUpdateState("00", myTypes.stateDefinition["energy_now"], energyNow, "energy_now");
-            await this.createOrUpdateState("00", myTypes.stateDefinition["energy_from_now"], Math.round((energyTotalToday.val - energyNow) * 1e3) / 1e3, "energy_from_now");
+          } else {
+            await this.createOrUpdateState("00", myTypes.stateDefinition["energy_now"], energyTotalToday == null ? void 0 : energyTotalToday.val, "energy_now");
+            await this.createOrUpdateState("00", myTypes.stateDefinition["energy_from_now"], 0, "energy_from_now");
           }
         }
       }
@@ -327,7 +332,7 @@ class Solarprognose extends utils.Adapter {
         } else {
           const obj = await this.getObjectAsync(id);
           if (obj && obj.common) {
-            if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
+            if (!myHelper.isStateCommonEqual(obj.common, stateDef.common)) {
               await this.extendObject(id, { common: stateDef.common });
               this.log.info(`${logPrefix} updated common properties of state '${id}'`);
             }
@@ -368,7 +373,7 @@ class Solarprognose extends utils.Adapter {
       } else {
         const obj = await this.getObjectAsync(id);
         if (obj && obj.common) {
-          if (JSON.stringify(obj.common) !== JSON.stringify(common)) {
+          if (!myHelper.isChannelCommonEqual(obj.common, common)) {
             await this.extendObject(id, { common });
             this.log.info(`${logPrefix} channel updated '${id}'`);
           }

@@ -275,21 +275,26 @@ class Solarprognose extends utils.Adapter {
 
 				const idEnergy = `00.${myTypes.stateDefinition['energy'].id}`
 
-				if (this.solarData && this.solarData[nowTs] && (await this.objectExists(idEnergy))) {
+				if (await this.objectExists(idEnergy)) {
 					const energyTotalToday = await this.getStateAsync(idEnergy);
 
-					if (energyTotalToday && (energyTotalToday.val || energyTotalToday.val === 0)) {
-						let energyNow = this.solarData[nowTs][1];
+					if (this.solarData && this.solarData[nowTs]) {
+						if (energyTotalToday && (energyTotalToday.val || energyTotalToday.val === 0)) {
+							let energyNow = this.solarData[nowTs][1];
 
-						if (this.config.dailyInterpolation && this.solarData[nextHourTs]) {
-							energyNow = Math.round((this.solarData[nowTs][1] + (this.solarData[nextHourTs][1] - this.solarData[nowTs][1]) / 60 * moment().minutes()) * 1000) / 1000;
-							this.log.debug(`${logPrefix} update energy_now with interpolation: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]}, energy next: ${this.solarData[nextHourTs][1]}, minutes: ${moment().minutes()}))`)
-						} else {
-							this.log.debug(`${logPrefix} update energy_now: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]})`);
+							if (this.config.dailyInterpolation && this.solarData[nextHourTs]) {
+								energyNow = Math.round((this.solarData[nowTs][1] + (this.solarData[nextHourTs][1] - this.solarData[nowTs][1]) / 60 * moment().minutes()) * 1000) / 1000;
+								this.log.debug(`${logPrefix} update energy_now with interpolation: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]}, energy next: ${this.solarData[nextHourTs][1]}, minutes: ${moment().minutes()}))`)
+							} else {
+								this.log.debug(`${logPrefix} update energy_now: ${energyNow} kWh (energy now: ${this.solarData[nowTs][1]})`);
+							}
+
+							await this.createOrUpdateState('00', myTypes.stateDefinition['energy_now'], energyNow, 'energy_now');
+							await this.createOrUpdateState('00', myTypes.stateDefinition['energy_from_now'], Math.round(((energyTotalToday.val as number) - energyNow) * 1000) / 1000, 'energy_from_now');
 						}
-
-						await this.createOrUpdateState('00', myTypes.stateDefinition['energy_now'], energyNow, 'energy_now');
-						await this.createOrUpdateState('00', myTypes.stateDefinition['energy_from_now'], Math.round(((energyTotalToday.val as number) - energyNow) * 1000) / 1000, 'energy_from_now');
+					} else {
+						await this.createOrUpdateState('00', myTypes.stateDefinition['energy_now'], (energyTotalToday?.val as number), 'energy_now');
+						await this.createOrUpdateState('00', myTypes.stateDefinition['energy_from_now'], 0, 'energy_from_now');
 					}
 				}
 			}
@@ -386,9 +391,8 @@ class Solarprognose extends utils.Adapter {
 					// update State if needed
 					const obj = await this.getObjectAsync(id);
 
-
 					if (obj && obj.common) {
-						if (JSON.stringify(obj.common) !== JSON.stringify(stateDef.common)) {
+						if (!myHelper.isStateCommonEqual(obj.common as ioBroker.StateCommon, stateDef.common)) {
 							await this.extendObject(id, { common: stateDef.common });
 							this.log.info(`${logPrefix} updated common properties of state '${id}'`);
 						}
@@ -438,7 +442,7 @@ class Solarprognose extends utils.Adapter {
 				const obj = await this.getObjectAsync(id);
 
 				if (obj && obj.common) {
-					if (JSON.stringify(obj.common) !== JSON.stringify(common)) {
+					if (!myHelper.isChannelCommonEqual(obj.common as ioBroker.ChannelCommon, common)) {
 						await this.extendObject(id, { common: common });
 						this.log.info(`${logPrefix} channel updated '${id}'`);
 					}
