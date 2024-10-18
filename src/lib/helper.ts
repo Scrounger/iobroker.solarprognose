@@ -4,8 +4,7 @@ export function zeroPad(source: any, places: number): string {
 }
 
 export function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: ioBroker.StateCommon): boolean {
-
-    return objCommon.name === myCommon.name &&
+    return JSON.stringify(objCommon.name) === JSON.stringify(myCommon.name) &&
         objCommon.type === myCommon.type &&
         objCommon.read === myCommon.read &&
         objCommon.write === objCommon.write &&
@@ -20,7 +19,7 @@ export function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: io
 }
 
 export function isChannelCommonEqual(objCommon: ioBroker.ChannelCommon, myCommon: ioBroker.ChannelCommon): boolean {
-    return objCommon.name === myCommon.name &&
+    return JSON.stringify(objCommon.name) === JSON.stringify(myCommon.name) &&
         objCommon.icon == myCommon.icon &&
         objCommon.desc === myCommon.desc &&
         objCommon.role === myCommon.role
