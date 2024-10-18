@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "solarprognose",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "news": {
+      "1.2.1": {
+        "en": "bug fixes",
+        "de": "fehlerbehebungen",
+        "ru": "исправления ошибок",
+        "pt": "correções de bugs",
+        "nl": "foutherstel",
+        "fr": "corrections des bogues",
+        "it": "correzioni di bug",
+        "es": "bug fixes",
+        "pl": "poprawki błędów",
+        "uk": "виправлення помилок",
+        "zh-cn": "错误修正"
+      },
       "1.2.0": {
         "en": "calc accuracy on state changed\nupdate energy now and energy from now every hour\noptional interpolate daily energy values (energy now and energy from now)",
         "de": "kalkgenauigkeit auf zustand geändert\nenergie jetzt und energie ab sofort jede stunde aktualisieren\noptional interpolieren tagesenergiewerte (energie jetzt und energie ab sofort)",

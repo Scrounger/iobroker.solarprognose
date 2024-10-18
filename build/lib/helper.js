@@ -28,10 +28,10 @@ function zeroPad(source, places) {
   return Array(+(zero > 0 && zero)).join("0") + source;
 }
 function isStateCommonEqual(objCommon, myCommon) {
-  return objCommon.name === myCommon.name && objCommon.type === myCommon.type && objCommon.read === myCommon.read && objCommon.write === objCommon.write && objCommon.role === myCommon.role && objCommon.def === myCommon.def && objCommon.unit === myCommon.unit && objCommon.icon === myCommon.icon && objCommon.desc == myCommon.desc && objCommon.max === myCommon.max && objCommon.min === myCommon.min && JSON.stringify(objCommon.states) === JSON.stringify(myCommon.states);
+  return JSON.stringify(objCommon.name) === JSON.stringify(myCommon.name) && objCommon.type === myCommon.type && objCommon.read === myCommon.read && objCommon.write === objCommon.write && objCommon.role === myCommon.role && objCommon.def === myCommon.def && objCommon.unit === myCommon.unit && objCommon.icon === myCommon.icon && objCommon.desc == myCommon.desc && objCommon.max === myCommon.max && objCommon.min === myCommon.min && JSON.stringify(objCommon.states) === JSON.stringify(myCommon.states);
 }
 function isChannelCommonEqual(objCommon, myCommon) {
-  return objCommon.name === myCommon.name && objCommon.icon == myCommon.icon && objCommon.desc === myCommon.desc && objCommon.role === myCommon.role;
+  return JSON.stringify(objCommon.name) === JSON.stringify(myCommon.name) && objCommon.icon == myCommon.icon && objCommon.desc === myCommon.desc && objCommon.role === myCommon.role;
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
